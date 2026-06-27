@@ -3,7 +3,8 @@ import Nav from "./Nav";
 import Hud from "./Hud";
 import StatLine from "./StatLine";
 import Terminal from "./Terminal";
-import DroneStage from "./DroneStage";
+import Background from "./Background";
+import Drone from "./Drone";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import { bands } from "../data/content";
 
@@ -25,10 +26,7 @@ function telemetryFor(p) {
   return { mode, alt: p * ALT_MAX, batt: Math.max(60, 100 - p * 16) };
 }
 
-const HALF_FRAME = 1 / 48; // seek threshold (~half a frame at 24fps)
-
 export default function CinematicExperience() {
-  const videoRef = useRef(null);
   const hudRef = useRef(null);
   const statRef = useRef(null);
   const pathRef = useRef(null);
@@ -68,20 +66,6 @@ export default function CinematicExperience() {
     const frame = () => {
       p += (pTarget - p) * (reduce ? 0.3 : 0.11);
 
-      // scrub the drone footage to match scroll
-      const video = videoRef.current;
-      if (video && !reduce) {
-        const dur = video.duration;
-        if (dur && Number.isFinite(dur)) {
-          const target = Math.min(p * dur, dur - 0.01);
-          const cur = video.currentTime;
-          const next = cur + (target - cur) * 0.18;
-          if (video.readyState >= 2 && !video.seeking && Math.abs(next - cur) > HALF_FRAME) {
-            video.currentTime = next;
-          }
-        }
-      }
-
       // push telemetry to the stat line (no React state)
       statRef.current?.set(telemetryFor(p));
 
@@ -119,7 +103,8 @@ export default function CinematicExperience() {
 
   return (
     <>
-      <DroneStage ref={videoRef} reducedMotion={reduce} />
+      <Background reducedMotion={reduce} />
+      <Drone reducedMotion={reduce} />
       <div className="overlay" />
       <div className="pathbar" ref={pathRef} />
 
