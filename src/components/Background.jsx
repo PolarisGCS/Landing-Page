@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-const TOTAL = 240;
+const TOTAL = 480;
 const src = (i) => `/frames/f${String(i).padStart(4, "0")}.jpg`;
 
 /**
@@ -40,7 +40,7 @@ export default function Background({ reducedMotion = false }) {
 
     const drawCover = (img) => {
       const cw = canvas.width, ch = canvas.height;
-      const iw = img.naturalWidth || 640, ih = img.naturalHeight || 360;
+      const iw = img.naturalWidth || 1280, ih = img.naturalHeight || 720;
       const scale = Math.max(cw / iw, ch / ih);
       const sw = iw * scale, sh = ih * scale;
       ctx.drawImage(img, (cw - sw) / 2, (ch - sh) / 2, sw, sh);
