@@ -48,12 +48,12 @@ const stampWithMs = () => {
   ).padStart(3, "0")}`;
 };
 
-/** One active band: log header → title lines → comment → graphic → CTA. */
-function Band({ band }) {
+/** One active band: log header → title lines → comment → graphic. */
+function Band({ band, isFirst }) {
   const rootRef = useRef(null);
   const reduce = useReducedMotion();
   const ts = useMemo(() => stampWithMs(), []);
-  const HeadingTag = band.at === 0 ? "h1" : "h2";
+  const HeadingTag = isFirst ? "h1" : "h2";
 
   // print-reveal the header + title lines in quick succession
   useEffect(() => {
@@ -94,21 +94,32 @@ function Band({ band }) {
       {band.comment && <p className="comment reveal-line">{band.comment}</p>}
 
       <Graphic kind={band.graphic} />
-
-      {band.cta && (
-        <div className="acts">
-          <a className="btn primary" href="#">{band.cta.primary}</a>
-          <a className="btn ghost" href="#">{band.cta.ghost}</a>
-        </div>
-      )}
     </section>
   );
 }
 
-export default function Terminal({ activeIndex, fracRef }) {
+export default function Terminal({
+  activeIndex,
+  total,
+  paused,
+  autoMs,
+  onPrev,
+  onNext,
+  onSelect,
+  onHoverChange,
+  onTogglePause,
+}) {
+  const reduce = useReducedMotion();
   const band = bands[Math.min(activeIndex, bands.length - 1)];
+  const frac = `${String(activeIndex + 1).padStart(2, "0")} / ${String(total).padStart(2, "0")}`;
+  const autoRunning = !paused && !reduce;
+
   return (
-    <div className="term">
+    <div
+      className="term"
+      onMouseEnter={() => onHoverChange?.(true)}
+      onMouseLeave={() => onHoverChange?.(false)}
+    >
       <div className="term-bar">
         <span className="term-dot r" />
         <span className="term-dot y" />
@@ -117,12 +128,66 @@ export default function Terminal({ activeIndex, fracRef }) {
           <span className="dot" />
           <span>LIVE</span>
         </span>
-        <span className="term-path">tail -f /var/log/flight/telemetry.log</span>
-        <span className="term-frac" ref={fracRef}>00 / {String(bands.length).padStart(2, "0")}</span>
+        <span className="term-path">tail -f /var/log/polaris/telemetry.log</span>
+        <span className="term-frac">{frac}</span>
       </div>
+
       <div className="term-body">
         {/* key forces a remount per band so its animations replay */}
-        <Band band={band} key={activeIndex} />
+        <Band band={band} isFirst={activeIndex === 0} key={activeIndex} />
+      </div>
+
+      {/* manual carousel controls — natural footer inside the console */}
+      <div className="term-foot">
+        <button
+          type="button"
+          className="tctl"
+          onClick={onPrev}
+          aria-label="Previous chapter"
+        >
+          ‹
+        </button>
+
+        <button
+          type="button"
+          className="tctl tctl--play"
+          onClick={onTogglePause}
+          aria-label={paused ? "Resume auto-advance" : "Pause auto-advance"}
+          aria-pressed={paused}
+        >
+          {paused ? "▷" : "❙❙"}
+        </button>
+
+        <div className="term-dots" role="tablist" aria-label="Chapters">
+          {Array.from({ length: total }).map((_, i) => (
+            <button
+              type="button"
+              key={i}
+              role="tab"
+              aria-selected={i === activeIndex}
+              aria-label={`Chapter ${i + 1}`}
+              className={`tdot${i === activeIndex ? " on" : ""}`}
+              onClick={() => onSelect(i)}
+            >
+              {/* fresh mount on each active slide restarts the fill animation */}
+              {i === activeIndex && autoRunning && (
+                <span
+                  className="tdot__bar"
+                  style={{ animationDuration: `${autoMs}ms` }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        <button
+          type="button"
+          className="tctl"
+          onClick={onNext}
+          aria-label="Next chapter"
+        >
+          ›
+        </button>
       </div>
     </div>
   );

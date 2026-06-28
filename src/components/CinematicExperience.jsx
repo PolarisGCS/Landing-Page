@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Nav from "./Nav";
 import Hud from "./Hud";
 import StatLine from "./StatLine";
@@ -8,10 +8,15 @@ import Drone from "./Drone";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import { bands } from "../data/content";
 
-/** Scroll distance — taller track = slower, smoother scrub across bands. */
+/** Scroll distance — taller track = slower, smoother scrub across the video. */
 const TRACK_VH = 1000;
 
-/** Derive instrument readouts from scroll progress (0..1). */
+/** How long each CLI chapter stays up before auto-advancing (ms). */
+const AUTO_MS = 6500;
+
+/** Derive instrument readouts from scroll progress (0..1).
+ *  These track the DRONE's flight as the background video scrubs — they belong
+ *  to the scroll-driven scene (background + drone), not to the CLI carousel. */
 const ALT_MAX = 420;
 const MODES = [
   { at: 0.0, t: "STABILIZE" },
@@ -30,13 +35,31 @@ export default function CinematicExperience() {
   const hudRef = useRef(null);
   const statRef = useRef(null);
   const pathRef = useRef(null);
-  const fracRef = useRef(null);
   const hintRef = useRef(null);
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const activeIndexRef = useRef(0);
   const reduce = useReducedMotion();
 
+  // ── CLI carousel: self-paced, independent of scroll ──────────────────
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const select = useCallback((idx) => {
+    setActiveIndex(((idx % bands.length) + bands.length) % bands.length);
+  }, []);
+  const next = useCallback(() => select(activeIndex + 1), [activeIndex, select]);
+  const prev = useCallback(() => select(activeIndex - 1), [activeIndex, select]);
+
+  // auto-advance; the timer restarts whenever the slide changes or we (un)pause,
+  // so a manual jump never collides with a pending tick.
+  useEffect(() => {
+    if (reduce || paused) return;
+    const id = setTimeout(() => {
+      setActiveIndex((i) => (i + 1) % bands.length);
+    }, AUTO_MS);
+    return () => clearTimeout(id);
+  }, [activeIndex, paused, reduce]);
+
+  // ── Scroll loop: ONLY the background-video / drone-flight chrome ──────
   useEffect(() => {
     let pTarget = 0;
     let p = 0;
@@ -55,34 +78,15 @@ export default function CinematicExperience() {
       hud.style.transform = `translate(${mx * 7}px, ${my * 7}px)`;
     };
 
-    const pickBand = (prog) => {
-      let idx = 0;
-      for (let i = 0; i < bands.length; i++) {
-        if (prog >= bands[i].at - 0.001) idx = i;
-      }
-      return idx;
-    };
-
     const frame = () => {
       p += (pTarget - p) * (reduce ? 0.3 : 0.11);
 
-      // push telemetry to the stat line (no React state)
+      // push flight telemetry to the stat line (no React state)
       statRef.current?.set(telemetryFor(p));
 
-      // chrome updates via refs
+      // scroll-progress chrome
       if (pathRef.current) pathRef.current.style.width = `${p * 100}%`;
       if (hintRef.current) hintRef.current.style.opacity = p < 0.04 ? "1" : "0";
-      if (fracRef.current) {
-        const n = pickBand(p) + 1;
-        fracRef.current.textContent = `${String(n).padStart(2, "0")} / ${String(bands.length).padStart(2, "0")}`;
-      }
-
-      // swap active band only when it changes
-      const idx = pickBand(p);
-      if (idx !== activeIndexRef.current) {
-        activeIndexRef.current = idx;
-        setActiveIndex(idx);
-      }
 
       raf = requestAnimationFrame(frame);
     };
@@ -111,14 +115,24 @@ export default function CinematicExperience() {
       <Nav />
       <Hud ref={hudRef} />
       <StatLine ref={statRef} />
-      <Terminal activeIndex={activeIndex} fracRef={fracRef} />
+      <Terminal
+        activeIndex={activeIndex}
+        total={bands.length}
+        paused={paused}
+        autoMs={AUTO_MS}
+        onPrev={prev}
+        onNext={next}
+        onSelect={select}
+        onHoverChange={setPaused}
+        onTogglePause={() => setPaused((v) => !v)}
+      />
 
       <div className="hint" ref={hintRef}>
         <span>SCROLL TO TAKE OFF</span>
         <span className="ar" />
       </div>
 
-      {/* tall invisible track produces the scroll distance */}
+      {/* tall invisible track produces the scroll distance for the video + drone */}
       <div className="track" style={{ height: `${TRACK_VH}vh` }} aria-hidden="true" />
     </>
   );

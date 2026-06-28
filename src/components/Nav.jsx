@@ -14,7 +14,6 @@ export default function Nav() {
           </a>
         ))}
       </nav>
-      <button className="nav-cta">{nav.cta}</button>
     </header>
   );
 }

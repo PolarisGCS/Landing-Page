@@ -1,136 +1,127 @@
 /**
  * Single source of truth for the console experience.
- * Copy is derived from the original PolarisGCS site — tightened for the
- * terminal format ("less text, more animation") while keeping the meaning.
  *
- * Each band is one scroll chapter shown inside the CLI. `graphic` names a
- * CLI visual (resolved in Terminal.jsx). `at` is the scroll progress (0..1)
- * at which the band becomes active.
+ * Copy is real PolarisGCS product context, condensed for the terminal format
+ * ("less text, more animation"). Facts are drawn from the Cloud-GCS SRS,
+ * the alignment plan, and the Android gateway playbook.
+ *
+ * Each band is one chapter shown inside the CLI. The CLI advances on its own
+ * (auto carousel + manual controls) — it is NOT driven by scroll. `graphic`
+ * names a CLI visual (resolved in Terminal.jsx).
  */
 
 export const brand = { mark: "PolarisGCS", tag: "GROUND CONTROL" };
 
 export const nav = {
   links: [
-    { label: "Fleet", href: "#" },
-    { label: "Telemetry", href: "#" },
-    { label: "Missions", href: "#" },
-    { label: "Deploy", href: "#" },
+    { label: "Fleet", href: "#fleet" },
+    { label: "Telemetry", href: "#telemetry" },
+    { label: "Missions", href: "#missions" },
+    { label: "Deploy", href: "#deploy" },
+    { label: "Docs", href: "#docs" },
   ],
-  cta: "Launch console",
 };
 
 /** Platforms — consumed by the DeployTargets CLI graphic. */
 export const platforms = {
   items: [
     { name: "Web Dashboard", meta: "no install · any browser" },
-    { name: "Desktop Companion", meta: "v2.4.1 · windows 10+" },
-    { name: "Mobile Companion", meta: "v2.4.0 · android 10+" },
+    { name: "Desktop Gateway", meta: "windows · linux · macos" },
+    { name: "Android Gateway", meta: "android 8.0+ · one drone / phone" },
   ],
 };
 
 export const bands = [
   {
-    at: 0.0,
     channel: "gcs.session",
     level: "info",
-    lines: ["Command your fleet.", "From one screen."],
-    comment: "fixed-wing · multirotor · VTOL",
+    lines: ["Command the fleet.", "From the cloud."],
+    comment: "multi-drone ground control · web · desktop · mobile",
     graphic: "boot",
   },
   {
-    at: 0.1,
     channel: "gcs.fleet",
     level: "info",
-    lines: ["One screen.", "Every drone."],
-    comment: "group · operate · monitor across teams",
+    lines: ["Every drone.", "One console."],
+    comment: "tier-1 wifi + tier-2 rf · up to 27 drones per gateway",
     graphic: "fleet",
   },
   {
-    at: 0.21,
     channel: "gcs.telemetry",
     level: "info",
-    lines: ["Every packet,", "the moment it lands."],
-    comment: "position · altitude · status · sub-second",
+    lines: ["Live telemetry,", "under 200 ms."],
+    comment: "position · attitude · battery · gps · redis fan-out",
     graphic: "spark",
   },
   {
-    at: 0.33,
     channel: "gcs.mission",
     level: "notice",
-    lines: ["Draw the route.", "It flies the route."],
+    lines: ["Plan the route.", "It flies the route."],
     comment: "waypoints → geofence → upload → AUTO",
     graphic: "route",
   },
   {
-    at: 0.45,
     channel: "gcs.sim",
     level: "info",
-    lines: ["Fly it before", "you fly it."],
-    comment: "ArduPilot SITL · same console, same workflow",
+    lines: ["Fly it in SITL", "before you fly it."],
+    comment: "ardupilot sitl · indistinguishable from real hardware",
     graphic: "pipeline-sim",
   },
   {
-    at: 0.56,
     channel: "gcs.access",
     level: "notice",
-    lines: ["Right access.", "Right people."],
-    comment: "operators · planners · observers",
+    lines: ["Right access,", "right people."],
+    comment: "operator · planner · observer · admin",
     graphic: "access",
   },
   {
-    at: 0.67,
     channel: "gcs.failsafe",
     level: "warn",
-    lines: ["It tells you first.", "It knows the way home."],
-    comment: "anomaly alerts · full status history · auto RTL",
+    lines: ["It warns first.", "It knows the way home."],
+    comment: "anomaly alerts · link-loss failsafe · auto RTL",
     graphic: "feed",
   },
   {
-    at: 0.78,
     channel: "gcs.deploy",
     level: "info",
     lines: ["Run it anywhere."],
-    comment: "web · desktop · mobile companion",
+    comment: "web dashboard · desktop gateway · android gateway",
     graphic: "deploy",
   },
   {
-    at: 0.88,
-    channel: "gcs.metrics",
+    channel: "gcs.scale",
     level: "info",
-    lines: ["Built for scale."],
-    comment: "from a handful of trainers to multi-team ops",
+    lines: ["Built to scale."],
+    comment: "1000+ concurrent drones · 30-day telemetry history",
     graphic: "metrics",
   },
   {
-    at: 0.96,
     channel: "gcs.command",
     level: "notice",
     lines: ["Take command."],
-    comment: "connect in under 5 minutes",
+    comment: "connect → plan → fly",
     graphic: "command",
-    cta: { primary: "Launch console", ghost: "Read the docs" },
   },
 ];
 
 /** Pipelines used by pipeline-style graphics. */
 export const pipelines = {
   sim: [
-    { k: "SIM", v: "spin up SITL" },
-    { k: "PLAN", v: "same console" },
+    { k: "SITL", v: "spawn ardupilot" },
+    { k: "GATEWAY", v: "same mavlink path" },
     { k: "LIVE", v: "identical workflow" },
   ],
   command: [
     { k: "CONNECT", v: "register + link drone" },
     { k: "PLAN", v: "assign + upload" },
-    { k: "FLY", v: "launch · track live" },
+    { k: "FLY", v: "arm · auto · track live" },
   ],
 };
 
 /** Stats — consumed by the metrics BarChart graphic. */
 export const metrics = [
-  { label: "drones managed", value: 1280, suffix: "+", max: 1400 },
-  { label: "missions flown", value: 342, suffix: "", max: 1400 },
-  { label: "uptime", value: 99.9, suffix: "%", max: 100 },
-  { label: "live monitoring", value: 24, suffix: "/7", max: 24 },
+  { label: "drones / gateway", value: 27, suffix: "", max: 30 },
+  { label: "fleet at scale", value: 1000, suffix: "+", max: 1200 },
+  { label: "uptime target", value: 99.9, suffix: "%", max: 100 },
+  { label: "history kept", value: 30, suffix: "d", max: 30 },
 ];

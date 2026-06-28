@@ -4,7 +4,7 @@ import { useReducedMotion } from "../../hooks/useReducedMotion";
 const BARS = 32;
 
 /** Live, scrolling telemetry sparkline drawn from mono bars. */
-export default function Sparkline({ caption = "telemetry / live" }) {
+export default function Sparkline({ caption = "telemetry / live · redis fan-out" }) {
   const refs = useRef([]);
   const reduce = useReducedMotion();
 

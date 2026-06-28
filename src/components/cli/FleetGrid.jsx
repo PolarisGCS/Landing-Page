@@ -4,7 +4,7 @@ import { useReducedMotion } from "../../hooks/useReducedMotion";
 const COUNT = 12;
 
 /** Grid of fleet units whose status dots flicker between online/idle/warn. */
-export default function FleetGrid({ caption = "fleet / 12 units online" }) {
+export default function FleetGrid({ caption = "fleet / tier-1 + tier-2 online" }) {
   const [states, setStates] = useState(() =>
     Array.from({ length: COUNT }, (_, i) => (i === 4 ? "idle" : "on")),
   );

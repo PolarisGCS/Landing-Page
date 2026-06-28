@@ -3,8 +3,8 @@ import { useReducedMotion } from "../../hooks/useReducedMotion";
 
 const STEPS = [
   "init gcs.core",
-  "mount telemetry bus",
-  "link MAVLink · sub-second",
+  "connect cloud backend",
+  "subscribe telemetry bus",
   "fleet discovery",
   "console ready",
 ];

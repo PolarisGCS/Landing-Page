@@ -2,18 +2,27 @@
 
 /* ──────────────────────────────────────────────────────────────
    PolarisGCS — cinematic ground-control console
-   Dark HUD aesthetic: amber instrument + teal signal, on deep night.
+   Palette: black / blue / white / purple.
+   --hud   = azure blue   (primary instrument, numbers, brand)
+   --signal= violet       (info / live / secondary accent)
+   --warn  = rose         (alerts)
    ────────────────────────────────────────────────────────────── */
 :root {
-  --ink: #f4efe6;
-  --ink-dim: #9fb0b6;
-  --hud: #ffc25c;
-  --hud-dim: #9c7330;
-  --signal: #73e3d2;
-  --warn: #ff7a59;
-  --line: rgba(255, 194, 92, 0.45);
-  --line-soft: rgba(255, 194, 92, 0.18);
-  --bg: #0a0f15;
+  --ink: #eef2fb;
+  --ink-dim: #aeb9d6;
+  --hud: #5b9dff;
+  --hud-dim: #7186c2;
+  --signal: #b39bff;
+  --warn: #ff7a9c;
+  --line: rgba(91, 157, 255, 0.42);
+  --line-soft: rgba(130, 156, 220, 0.16);
+  --bg: #070b14;
+
+  /* shared glows tuned to the new accents */
+  --glow-blue: rgba(91, 157, 255, 0.42);
+  --glow-violet: rgba(179, 155, 255, 0.4);
+  /* dark halo so chrome stays legible over the bright sky video */
+  --legible: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 14px rgba(0, 0, 0, 0.45);
 
   --display: "Space Grotesk", system-ui, sans-serif;
   --mono: "Space Mono", ui-monospace, monospace;
@@ -21,13 +30,13 @@
 }
 
 @theme {
-  --color-ink: #f4efe6;
-  --color-ink-dim: #9fb0b6;
-  --color-hud: #ffc25c;
-  --color-hud-dim: #9c7330;
-  --color-signal: #73e3d2;
-  --color-warn: #ff7a59;
-  --color-bg: #0a0f15;
+  --color-ink: #eef2fb;
+  --color-ink-dim: #aeb9d6;
+  --color-hud: #5b9dff;
+  --color-hud-dim: #7186c2;
+  --color-signal: #b39bff;
+  --color-warn: #ff7a9c;
+  --color-bg: #070b14;
   --font-mono: "Space Mono", ui-monospace, monospace;
   --font-display: "Space Grotesk", system-ui, sans-serif;
 }
@@ -283,12 +292,14 @@ body {
   font-weight: 700;
   font-size: 20px;
   color: var(--ink);
+  text-shadow: var(--legible);
 }
 .brand .tag {
   font-family: var(--mono);
   font-size: 10px;
   color: var(--hud);
   letter-spacing: 0.28em;
+  text-shadow: var(--legible);
 }
 .nav-links {
   display: flex;
@@ -300,29 +311,16 @@ body {
   font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--ink-dim);
+  color: var(--ink);
+  opacity: 0.82;
   text-decoration: none;
-  transition: color 0.2s;
+  text-shadow: var(--legible);
+  transition: color 0.2s, opacity 0.2s, text-shadow 0.2s;
 }
 .nav-links a:hover {
   color: var(--hud);
-}
-.nav-cta {
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--bg);
-  background: var(--hud);
-  border: none;
-  padding: 9px 16px;
-  cursor: pointer;
-  border-radius: 1px;
-  transition: transform 0.15s, box-shadow 0.2s;
-}
-.nav-cta:hover {
-  box-shadow: 0 0 0 1px var(--hud), 0 0 22px rgba(255, 194, 92, 0.4);
-  transform: translateY(-1px);
+  opacity: 1;
+  text-shadow: var(--legible), 0 0 16px var(--glow-blue);
 }
 @media (max-width: 760px) {
   .nav-links a {
@@ -413,20 +411,22 @@ body {
 .statline .lab {
   font-size: 9px;
   letter-spacing: 0.26em;
-  color: var(--hud-dim);
+  color: var(--ink-dim);
+  text-shadow: var(--legible);
 }
 .statline .val {
   font-size: 20px;
-  color: var(--hud);
+  color: #ffffff;
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 14px rgba(255, 194, 92, 0.25);
+  text-shadow: var(--legible), 0 0 16px var(--glow-blue);
 }
 .statline .val.mode {
   color: var(--signal);
   font-size: 16px;
   letter-spacing: 0.06em;
+  text-shadow: var(--legible), 0 0 16px var(--glow-violet);
 }
 .statline .val small {
   font-size: 10px;
@@ -445,11 +445,13 @@ body {
   left: clamp(20px, 8vw, 130px);
   bottom: clamp(56px, 10vh, 112px);
   width: min(46vw, 660px);
-  background: rgba(8, 12, 16, 0.5);
-  border: 1px solid rgba(255, 194, 92, 0.22);
-  border-radius: 6px;
-  backdrop-filter: blur(7px);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+  background: rgba(9, 13, 26, 0.62);
+  border: 1px solid rgba(91, 157, 255, 0.28);
+  border-radius: 8px;
+  backdrop-filter: blur(9px);
+  box-shadow:
+    0 24px 70px rgba(3, 6, 16, 0.6),
+    inset 0 1px 0 rgba(146, 178, 255, 0.08);
   overflow: hidden;
 }
 .term::after {
@@ -459,7 +461,7 @@ body {
   right: 0;
   height: 50%;
   top: -60%;
-  background: linear-gradient(180deg, rgba(255, 194, 92, 0) 0%, rgba(255, 194, 92, 0.07) 48%, rgba(255, 194, 92, 0) 100%);
+  background: linear-gradient(180deg, rgba(91, 157, 255, 0) 0%, rgba(91, 157, 255, 0.08) 48%, rgba(91, 157, 255, 0) 100%);
   animation: sweep 6.5s linear infinite;
   pointer-events: none;
 }
@@ -474,7 +476,7 @@ body {
   align-items: center;
   gap: 7px;
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(255, 194, 92, 0.14);
+  border-bottom: 1px solid rgba(91, 157, 255, 0.16);
 }
 .term-dot {
   width: 8px;
@@ -528,8 +530,105 @@ body {
 .term-body {
   position: relative;
   z-index: 1;
-  padding: 22px clamp(18px, 2.6vw, 32px) 26px;
-  min-height: 260px;
+  padding: 22px clamp(18px, 2.6vw, 32px) 16px;
+  min-height: 250px;
+}
+
+/* ===== carousel controls (footer inside the console) ===== */
+.term-foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px clamp(16px, 2.4vw, 26px);
+  border-top: 1px solid rgba(91, 157, 255, 0.14);
+  background: rgba(7, 11, 22, 0.4);
+}
+.tctl {
+  pointer-events: auto;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink-dim);
+  background: rgba(91, 157, 255, 0.06);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s, transform 0.12s;
+}
+.tctl:hover {
+  color: var(--hud);
+  border-color: var(--line);
+  background: rgba(91, 157, 255, 0.12);
+}
+.tctl:active {
+  transform: scale(0.92);
+}
+.tctl--play {
+  font-size: 10px;
+  letter-spacing: -1px;
+  color: var(--signal);
+}
+.tctl:focus-visible {
+  outline: 2px solid var(--hud);
+  outline-offset: 2px;
+}
+
+.term-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 auto;
+}
+.tdot {
+  pointer-events: auto;
+  position: relative;
+  width: 22px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: rgba(140, 160, 220, 0.22);
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.2s, width 0.25s ease;
+}
+.tdot:hover {
+  background: rgba(140, 160, 220, 0.4);
+}
+.tdot.on {
+  width: 34px;
+  background: rgba(91, 157, 255, 0.28);
+}
+.tdot:focus-visible {
+  outline: 2px solid var(--hud);
+  outline-offset: 2px;
+}
+/* auto-advance progress fill on the active dot */
+.tdot__bar {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--hud), var(--signal));
+  box-shadow: 0 0 10px var(--glow-blue);
+  animation: dotFill linear forwards;
+}
+@keyframes dotFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@media (max-width: 560px) {
+  .term-dots { gap: 5px; }
+  .tdot { width: 16px; }
+  .tdot.on { width: 26px; }
 }
 
 /* ===== band (one scroll chapter inside the console) ===== */
@@ -736,8 +835,8 @@ body {
   border-radius: 3px;
   overflow: hidden;
   background:
-    linear-gradient(rgba(255, 194, 92, 0.05) 1px, transparent 1px) 0 0 / 100% 24px,
-    linear-gradient(90deg, rgba(255, 194, 92, 0.05) 1px, transparent 1px) 0 0 / 32px 100%;
+    linear-gradient(rgba(91, 157, 255, 0.07) 1px, transparent 1px) 0 0 / 100% 24px,
+    linear-gradient(90deg, rgba(91, 157, 255, 0.07) 1px, transparent 1px) 0 0 / 32px 100%;
 }
 
 /* pipeline */
@@ -884,9 +983,9 @@ body {
   height: 2px;
   z-index: 7;
   width: 0;
-  background: linear-gradient(90deg, var(--hud), rgba(255, 255, 255, 0.85), var(--hud));
+  background: linear-gradient(90deg, var(--hud), rgba(255, 255, 255, 0.9), var(--signal));
   background-size: 220% 100%;
-  box-shadow: 0 0 12px rgba(255, 194, 92, 0.6);
+  box-shadow: 0 0 12px var(--glow-blue);
   animation: shimmerBar 2.6s linear infinite;
 }
 @keyframes shimmerBar {
