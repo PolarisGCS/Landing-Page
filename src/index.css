@@ -1,33 +1,1263 @@
 @import "tailwindcss";
 
+/* ──────────────────────────────────────────────────────────────
+   PolarisGCS — cinematic ground-control console
+   Palette: black / blue / white / purple.
+   --hud   = azure blue   (primary instrument, numbers, brand)
+   --signal= violet       (info / live / secondary accent)
+   --warn  = rose         (alerts)
+   ────────────────────────────────────────────────────────────── */
+:root {
+  --ink: #eef2fb;
+  --ink-dim: #aeb9d6;
+  --hud: #5b9dff;
+  --hud-dim: #7186c2;
+  --signal: #b39bff;
+  --warn: #ff7a9c;
+  --line: rgba(91, 157, 255, 0.42);
+  --line-soft: rgba(130, 156, 220, 0.16);
+  --bg: #070b14;
+
+  /* shared glows tuned to the new accents */
+  --glow-blue: rgba(91, 157, 255, 0.42);
+  --glow-violet: rgba(179, 155, 255, 0.4);
+  /* dark halo so chrome stays legible over the bright sky video */
+  --legible: 0 1px 2px rgba(0, 0, 0, 0.55), 0 0 14px rgba(0, 0, 0, 0.45);
+
+  --display: "Space Grotesk", system-ui, sans-serif;
+  --mono: "Space Mono", ui-monospace, monospace;
+  --body: "Inter", system-ui, sans-serif;
+}
+
 @theme {
-  --color-ink: #121317;
-  --color-muted: #45474d;
-  --color-faint: #6a6a71;
-  --color-paper: #ffffff;
-  --color-near-black: #0b0b0d;
-  --font-display: "Google Sans Flex", "Google Sans", system-ui, sans-serif;
+  --color-ink: #eef2fb;
+  --color-ink-dim: #aeb9d6;
+  --color-hud: #5b9dff;
+  --color-hud-dim: #7186c2;
+  --color-signal: #b39bff;
+  --color-warn: #ff7a9c;
+  --color-bg: #070b14;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
-body {
+* {
+  box-sizing: border-box;
   margin: 0;
-  background: var(--color-paper);
-  color: var(--color-ink);
-  font-family: var(--font-display);
+  padding: 0;
+}
+html,
+body {
+  height: 100%;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+}
+::selection {
+  background: var(--hud);
+  color: var(--bg);
+}
+
+/* ===== premium aerospace backdrop (fixed, full-bleed, z below everything) ===== */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.sky > * {
+  position: absolute;
+  inset: 0;
+}
+/* scroll-scrubbed frame canvas — sized to viewport by JS, fills the sky container */
+.sky__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  transform-origin: center center;
+}
+/* high-altitude night → dawn vertical gradient */
+.sky__gradient {
+  background:
+    linear-gradient(
+      180deg,
+      #05080f 0%,
+      #081020 28%,
+      #0d1a30 50%,
+      #14253e 70%,
+      #20304a 86%,
+      #34303c 100%
+    );
+}
+/* crisp starfield (box-shadow dots set inline) — must be a 1px element */
+.sky__stars {
+  inset: auto;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  border-radius: 50%;
+  animation: twinkle 7s ease-in-out infinite;
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+/* warm sunrise bloom low on the horizon, back-lighting the drone (~71% across) */
+.sky__sun {
+  background:
+    radial-gradient(58% 48% at 71% 80%, rgba(255, 188, 116, 0.34), rgba(255, 150, 92, 0.12) 40%, transparent 66%),
+    radial-gradient(130% 72% at 58% 104%, rgba(255, 158, 96, 0.18), transparent 60%),
+    radial-gradient(80% 60% at 30% 8%, rgba(96, 132, 180, 0.12), transparent 60%);
+  animation: sunBreathe 9s ease-in-out infinite;
+}
+@keyframes sunBreathe {
+  0%, 100% { opacity: 0.82; }
+  50% { opacity: 1; }
+}
+/* parallax wrappers — driven by --ascent (0 on the pad → 1 at apex).
+   As the drone climbs, the world drops away: clouds rush down, ground recedes. */
+.parallax {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+.parallax--far { transform: translateY(calc(var(--ascent, 0) * 24vh)); }
+.parallax--near { transform: translateY(calc(var(--ascent, 0) * 88vh)); }
+.parallax--ground {
+  transform: translateY(calc(var(--ascent, 0) * 70vh));
+  opacity: calc(1 - var(--ascent, 0) * 0.9);
+}
+
+/* volumetric cloud banks — big, blurred, very low opacity, slow lateral drift */
+.sky__clouds { position: absolute; inset: 0; }
+.sky__clouds--far { filter: blur(34px); opacity: 0.6; }
+.sky__clouds--near { filter: blur(22px); opacity: 0.5; }
+.cloud {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(168, 188, 214, 0.3), transparent 68%);
+}
+.cloud--a { width: 64vw; height: 28vh; left: -8vw; top: 38%; animation: cloudDrift 64s linear infinite; }
+.cloud--b {
+  width: 50vw; height: 22vh; right: -6vw; top: 28%;
+  background: radial-gradient(circle, rgba(255, 192, 128, 0.22), transparent 66%);
+  animation: cloudDrift 86s linear infinite reverse;
+}
+.cloud--c {
+  width: 76vw; height: 32vh; left: 4vw; top: 56%;
+  background: radial-gradient(circle, rgba(255, 178, 120, 0.18), transparent 68%);
+  animation: cloudDrift 78s linear infinite reverse;
+}
+.cloud--d {
+  width: 56vw; height: 24vh; right: -10vw; top: 70%;
+  background: radial-gradient(circle, rgba(210, 224, 240, 0.26), transparent 66%);
+  animation: cloudDrift 96s linear infinite;
+}
+@keyframes cloudDrift {
+  0% { transform: translateX(-4%); }
+  50% { transform: translateX(6%); }
+  100% { transform: translateX(-4%); }
+}
+/* distant ridge silhouettes — atmospheric perspective via opacity/colour */
+.sky__ridges {
+  position: absolute;
+  width: 100%;
+  height: 44%;
+  top: auto;
+  bottom: 22vh;
+}
+.ridge--far { fill: #11151d; opacity: 0.55; }
+.ridge--near { fill: #0a0d13; opacity: 0.85; }
+/* haze band lifting off the horizon, blending ridges into air */
+.sky__haze {
+  top: auto;
+  bottom: 0;
+  height: 46%;
+  background: linear-gradient(0deg, rgba(120, 140, 168, 0.12) 0%, transparent 72%);
+  filter: blur(6px);
+}
+
+/* ===== misty ground plane the drone rests on ===== */
+.ground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40vh;
+}
+.ground__fog {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, #0e131d 0%, rgba(18, 24, 35, 0.95) 26%, rgba(26, 33, 46, 0.5) 58%, rgba(40, 48, 64, 0.14) 82%, transparent 100%);
+}
+/* faint lit horizon where the surface meets the haze */
+.ground__fog::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 14%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(176, 196, 222, 0.18) 30%, rgba(255, 194, 120, 0.16) 60%, transparent);
+  filter: blur(2px);
+}
+/* soft landing pad glow beneath the drone (right side, matching drone-pos) */
+.ground__pad {
+  position: absolute;
+  left: 70%;
+  top: 18vh;
+  width: clamp(280px, 32vw, 520px);
+  height: clamp(56px, 8vw, 120px);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 194, 92, 0.12), rgba(115, 227, 210, 0.05) 48%, transparent 72%);
+  filter: blur(10px);
+}
+/* faint floating particulate */
+.sky__motes { inset: 0; }
+.mote {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(220, 228, 240, 0.5);
+  box-shadow: 0 0 4px rgba(220, 228, 240, 0.35);
+  opacity: 0;
+  animation-name: moteFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+@keyframes moteFloat {
+  0% { transform: translate(0, 0); opacity: 0; }
+  15% { opacity: 0.6; }
+  85% { opacity: 0.5; }
+  100% { transform: translate(var(--drift, 0), -120px); opacity: 0; }
+}
+/* vignette + left-side darkening so the console/HUD stay legible over the sky */
+.sky__vignette {
+  background:
+    linear-gradient(90deg, rgba(5, 8, 15, 0.72) 0%, rgba(5, 8, 15, 0.32) 26%, transparent 48%),
+    radial-gradient(120% 95% at 56% 36%, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* Tall invisible track that produces the scroll distance */
+.track {
+  width: 1px;
+  pointer-events: none;
+  position: relative;
+  z-index: 0;
+}
+
+/* Multiply scanline + vignette overlay */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 18%, transparent 55%, rgba(0, 0, 0, 0.35) 100%),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.05) 0 1px, transparent 1px 3px);
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+}
+
+/* ===== NAV ===== */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px clamp(18px, 4vw, 46px);
+}
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  letter-spacing: 0.18em;
+}
+.brand .mark {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--ink);
+  text-shadow: var(--legible);
+}
+.brand .tag {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--hud);
+  letter-spacing: 0.28em;
+  text-shadow: var(--legible);
+}
+.nav-links {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+}
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  opacity: 0.82;
+  text-decoration: none;
+  text-shadow: var(--legible);
+  transition: color 0.2s, opacity 0.2s, text-shadow 0.2s;
+}
+.nav-links a:hover {
+  color: var(--hud);
+  opacity: 1;
+  text-shadow: var(--legible), 0 0 16px var(--glow-blue);
+}
+@media (max-width: 760px) {
+  .nav-links a {
+    display: none;
+  }
+}
+
+/* ===== camera HUD framing (cursor-parallaxed) ===== */
+.hud {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  transition: transform 0.35s ease-out;
+}
+.bracket {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--line);
+}
+.bracket.tl {
+  top: 74px;
+  left: 24px;
+  border-right: none;
+  border-bottom: none;
+}
+.bracket.tr {
+  top: 74px;
+  right: 24px;
+  border-left: none;
+  border-bottom: none;
+}
+.bracket.bl {
+  bottom: 24px;
+  left: 24px;
+  border-right: none;
+  border-top: none;
+}
+.bracket.br {
+  bottom: 24px;
+  right: 24px;
+  border-left: none;
+  border-top: none;
+}
+.boresight {
+  position: absolute;
+  left: 74%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 120px;
+  height: 120px;
+  animation: bsPulse 3.2s ease-in-out infinite;
+}
+.boresight span {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid var(--line-soft);
+}
+.boresight .a { top: 0; left: 0; border-right: none; border-bottom: none; }
+.boresight .b { top: 0; right: 0; border-left: none; border-bottom: none; }
+.boresight .c { bottom: 0; left: 0; border-right: none; border-top: none; }
+.boresight .d { bottom: 0; right: 0; border-left: none; border-top: none; }
+@keyframes bsPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ===== status line: time / mode / alt / batt ===== */
+.statline {
+  position: fixed;
+  right: clamp(20px, 4vw, 46px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+  text-align: right;
+  font-family: var(--mono);
+  z-index: 4;
+}
+.statline .row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.statline .lab {
+  font-size: 9px;
+  letter-spacing: 0.26em;
+  color: var(--ink-dim);
+  text-shadow: var(--legible);
+}
+.statline .val {
+  font-size: 20px;
+  color: #ffffff;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: var(--legible), 0 0 16px var(--glow-blue);
+}
+.statline .val.mode {
+  color: var(--signal);
+  font-size: 16px;
+  letter-spacing: 0.06em;
+  text-shadow: var(--legible), 0 0 16px var(--glow-violet);
+}
+.statline .val small {
+  font-size: 10px;
+  color: var(--ink-dim);
+  font-weight: 400;
+  margin-left: 3px;
+}
+@media (max-width: 840px) {
+  .statline { display: none; }
+}
+
+/* ===== terminal console ===== */
+.term {
+  position: fixed;
+  z-index: 5;
+  left: clamp(20px, 8vw, 130px);
+  bottom: clamp(56px, 10vh, 112px);
+  width: min(46vw, 660px);
+  background: rgba(9, 13, 26, 0.62);
+  border: 1px solid rgba(91, 157, 255, 0.28);
+  border-radius: 8px;
+  backdrop-filter: blur(9px);
+  box-shadow:
+    0 24px 70px rgba(3, 6, 16, 0.6),
+    inset 0 1px 0 rgba(146, 178, 255, 0.08);
+  overflow: hidden;
+}
+.term::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  top: -60%;
+  background: linear-gradient(180deg, rgba(91, 157, 255, 0) 0%, rgba(91, 157, 255, 0.08) 48%, rgba(91, 157, 255, 0) 100%);
+  animation: sweep 6.5s linear infinite;
+  pointer-events: none;
+}
+@keyframes sweep {
+  0% { top: -60%; }
+  100% { top: 120%; }
+}
+.term-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-bottom: 1px solid rgba(91, 157, 255, 0.16);
+}
+.term-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  opacity: 0.5;
+  flex: none;
+}
+.term-dot.r { background: var(--warn); }
+.term-dot.y { background: var(--hud); }
+.term-dot.g { background: var(--signal); }
+.term-live {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 6px;
+}
+.term-live .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--signal);
+  box-shadow: 0 0 8px var(--signal);
+  animation: blink 1.6s steps(1) infinite;
+}
+.term-live span {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--hud-dim);
+}
+.term-path {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 0.02em;
+  margin-left: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.7;
+}
+.term-frac {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--hud-dim);
+  letter-spacing: 0.1em;
+  font-variant-numeric: tabular-nums;
+}
+.term-body {
+  position: relative;
+  z-index: 1;
+  padding: 22px clamp(18px, 2.6vw, 32px) 16px;
+  min-height: 250px;
+}
+
+/* ===== carousel controls (footer inside the console) ===== */
+.term-foot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px clamp(16px, 2.4vw, 26px);
+  border-top: 1px solid rgba(91, 157, 255, 0.14);
+  background: rgba(7, 11, 22, 0.4);
+}
+.tctl {
+  pointer-events: auto;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink-dim);
+  background: rgba(91, 157, 255, 0.06);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s, transform 0.12s;
+}
+.tctl:hover {
+  color: var(--hud);
+  border-color: var(--line);
+  background: rgba(91, 157, 255, 0.12);
+}
+.tctl:active {
+  transform: scale(0.92);
+}
+.tctl--play {
+  font-size: 10px;
+  letter-spacing: -1px;
+  color: var(--signal);
+}
+.tctl:focus-visible {
+  outline: 2px solid var(--hud);
+  outline-offset: 2px;
+}
+
+.term-dots {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 auto;
+}
+.tdot {
+  pointer-events: auto;
+  position: relative;
+  width: 22px;
+  height: 8px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: rgba(140, 160, 220, 0.22);
+  cursor: pointer;
+  overflow: hidden;
+  transition: background 0.2s, width 0.25s ease;
+}
+.tdot:hover {
+  background: rgba(140, 160, 220, 0.4);
+}
+.tdot.on {
+  width: 34px;
+  background: rgba(91, 157, 255, 0.28);
+}
+.tdot:focus-visible {
+  outline: 2px solid var(--hud);
+  outline-offset: 2px;
+}
+/* auto-advance progress fill on the active dot */
+.tdot__bar {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center;
+  transform: scaleX(0);
+  border-radius: 5px;
+  background: linear-gradient(90deg, var(--hud), var(--signal));
+  box-shadow: 0 0 10px var(--glow-blue);
+  animation: dotFill linear forwards;
+}
+@keyframes dotFill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@media (max-width: 560px) {
+  .term-dots { gap: 5px; }
+  .tdot { width: 16px; }
+  .tdot.on { width: 26px; }
+}
+
+/* ===== band (one scroll chapter inside the console) ===== */
+.logmeta {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  margin-bottom: 14px;
+}
+.logmeta .lt {
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.lvl {
+  font-weight: 700;
+  animation: lvlPulse 2.4s ease-in-out infinite;
+}
+.lvl-info { color: var(--signal); }
+.lvl-notice { color: var(--hud); }
+.lvl-warn { color: var(--warn); }
+.logmeta .chan { color: var(--ink-dim); }
+@keyframes lvlPulse {
+  0%, 100% { text-shadow: 0 0 0 transparent; }
+  50% { text-shadow: 0 0 9px currentColor; }
+}
+
+.band h1,
+.band h2 {
+  font-family: var(--mono);
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+}
+.band h1 { font-size: clamp(24px, 3.2vw, 40px); }
+.band h2 { font-size: clamp(21px, 2.7vw, 32px); }
+.band p {
+  font-family: var(--mono);
+  font-size: clamp(12px, 1.1vw, 13.5px);
+  line-height: 1.6;
+  color: var(--ink-dim);
+  margin-top: 12px;
+}
+.band p.comment::before {
+  content: "// ";
+  color: var(--hud-dim);
+}
+
+/* per-line print reveal */
+.reveal-line {
+  opacity: 0;
+  transform: translateY(5px);
+  transition: opacity 0.26s ease, transform 0.26s ease;
+}
+.reveal-line.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.band .acts {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+.btn {
+  pointer-events: auto;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 11px 18px;
+  border-radius: 1px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s, color 0.2s;
+}
+.btn.primary {
+  background: var(--hud);
+  color: var(--bg);
+  border: 1px solid var(--hud);
+}
+.btn.primary:hover {
+  box-shadow: 0 0 26px rgba(255, 194, 92, 0.45);
+  transform: translateY(-1px);
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+.btn.ghost:hover {
+  border-color: var(--hud);
+  color: var(--hud);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+
+/* ===== CLI graphics ===== */
+.cli {
+  font-family: var(--mono);
+  margin-top: 18px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+.cli-caption {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hud-dim);
+  margin-bottom: 9px;
+}
+
+/* fleet grid */
+.fleet {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.fleet .cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: 2px;
+  font-size: 9.5px;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+}
+.fleet .cell .d {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex: none;
+}
+.dot-on { background: var(--signal); box-shadow: 0 0 6px var(--signal); }
+.dot-idle { background: var(--hud-dim); }
+.dot-warn { background: var(--warn); box-shadow: 0 0 6px var(--warn); }
+
+/* sparkline / bars */
+.spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 56px;
+}
+.spark i {
+  flex: 1;
+  background: linear-gradient(var(--hud), var(--hud-dim));
+  border-radius: 1px 1px 0 0;
+  min-height: 2px;
+  transition: height 0.12s linear;
+}
+
+/* horizontal bar chart */
+.bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bars .barrow {
+  display: grid;
+  grid-template-columns: 92px 1fr 64px;
+  align-items: center;
+  gap: 10px;
+  font-size: 10px;
+}
+.bars .lab {
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+}
+.bars .track2 {
+  height: 8px;
+  background: var(--line-soft);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.bars .fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--hud-dim), var(--hud));
+  width: 0;
+  transition: width 0.9s var(--ease, cubic-bezier(0.16, 1, 0.3, 1));
+}
+.bars .num {
+  text-align: right;
+  color: var(--hud);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* route map */
+.routemap {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  border: 1px solid var(--line-soft);
+  border-radius: 3px;
+  overflow: hidden;
+  background:
+    linear-gradient(rgba(91, 157, 255, 0.07) 1px, transparent 1px) 0 0 / 100% 24px,
+    linear-gradient(90deg, rgba(91, 157, 255, 0.07) 1px, transparent 1px) 0 0 / 32px 100%;
+}
+
+/* pipeline */
+.pipe {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+.pipe .stage {
+  flex: 1;
+  border: 1px solid var(--line-soft);
+  border-radius: 2px;
+  padding: 10px 12px;
+}
+.pipe .stage .k {
+  color: var(--hud);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+}
+.pipe .stage .v {
+  color: var(--ink-dim);
+  font-size: 9.5px;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.pipe .arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  color: var(--hud-dim);
+}
+
+/* matrix (access) */
+.matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+.matrix th,
+.matrix td {
+  border: 1px solid var(--line-soft);
+  padding: 6px 8px;
+  text-align: center;
+  color: var(--ink-dim);
+}
+.matrix th {
+  color: var(--hud-dim);
+  letter-spacing: 0.08em;
+  font-weight: 400;
+}
+.matrix td.role {
+  text-align: left;
+  color: var(--ink);
+}
+.matrix .yes { color: var(--signal); }
+.matrix .no { color: var(--hud-dim); opacity: 0.5; }
+
+/* log feed */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 10.5px;
+}
+.feed .ln {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+.feed .ln .t {
+  color: var(--hud-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* deploy targets */
+.targets {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.targets .tg {
+  display: grid;
+  grid-template-columns: 16px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 2px;
+  padding: 9px 11px;
+  font-size: 10.5px;
+}
+.targets .tg .name {
+  color: var(--ink);
+}
+.targets .tg .meta {
+  color: var(--hud-dim);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+}
+
+/* scroll hint */
+.hint {
+  position: fixed;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 5;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--ink-dim);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  transition: opacity 0.5s;
+}
+.hint .ar {
+  width: 1px;
+  height: 30px;
+  background: linear-gradient(var(--hud), transparent);
+  position: relative;
+  overflow: hidden;
+}
+.hint .ar::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 12px;
+  background: var(--hud);
+  animation: fall 1.7s infinite;
+}
+@keyframes fall {
+  0% { transform: translateY(-14px); }
+  70%, 100% { transform: translateY(34px); }
+}
+
+.pathbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  z-index: 7;
+  width: 0;
+  background: linear-gradient(90deg, var(--hud), rgba(255, 255, 255, 0.9), var(--signal));
+  background-size: 220% 100%;
+  box-shadow: 0 0 12px var(--glow-blue);
+  animation: shimmerBar 2.6s linear infinite;
+}
+@keyframes shimmerBar {
+  0% { background-position: 0% 0; }
+  100% { background-position: 220% 0; }
+}
+
+@media (max-width: 900px) {
+  .term {
+    width: auto;
+    left: clamp(14px, 4vw, 40px);
+    right: clamp(14px, 4vw, 40px);
+    bottom: 84px;
+  }
+}
+@media (max-width: 560px) {
+  .term-path { display: none; }
+}
+
+/* ===== drone assembly ===== */
+.drone-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 3; /* above scanline overlay, below HUD + terminal */
+  pointer-events: none;
+  overflow: hidden;
+  --drone-w: clamp(140px, 16vw, 220px);
+  --prop-w: calc(var(--drone-w) * 0.5);
+}
+/* rest position: right of the terminal, gear in the grass */
+.drone-pos {
+  position: absolute;
+  left: 70%;
+  bottom: 2vh;
+  width: var(--drone-w);
+  height: var(--drone-w);
+  /* lag offset from Background's rAF loop — drone drifts slightly behind the
+     camera's correction, reading as "camera chasing the drone" */
+  transform: translateX(-50%) translate(var(--drone-lag-x, 0px), var(--drone-lag-y, 0px));
+  will-change: transform;
+}
+
+/* layered transforms never collide: lift(scroll) → shake → hover(idle) */
+.drone-lift {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+.drone-shake {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+.drone-hover {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 80%;
+  animation: droneHover 2.8s ease-in-out infinite;
+  /* paused by default — useDroneFlight sets --hover-play:running once airborne */
+  animation-play-state: var(--hover-play, paused);
+  will-change: transform;
+}
+.drone-hover.is-static { animation: none; }
+@keyframes droneHover {
+  0%   { transform: translateY(0) rotate(-0.25deg); }
+  50%  { transform: translateY(-4px) rotate(0.25deg); }
+  100% { transform: translateY(0) rotate(-0.25deg); }
+}
+
+.drone-anchor {
+  position: absolute;
+  inset: 0;
+}
+.drone__body {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45));
+  user-select: none;
+}
+/* faint amber lift glow behind the airframe */
+.drone__glow {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 86%;
+  height: 70%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 194, 92, 0.16), transparent 64%);
+  filter: blur(18px);
+  animation: glowPulse 4.2s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.85; }
+}
+
+/* ===== propellers — independent, rotated about each motor hub ===== */
+/* .prop is centred on its motor (left/top % set inline). Its children — the
+   vector prop and the blur disc — share the same centre, which is the hub, so
+   the 3D spin pivots exactly on the motor. */
+.prop {
+  position: absolute;
+  width: var(--prop-w);
+  height: var(--prop-w);
+  transform: translate(-50%, -50%);
+  transform-style: preserve-3d;
+}
+.prop__spin {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  transform: rotateX(58deg); /* JS overwrites: rotateX(tilt) rotateZ(angle) */
+  will-change: transform, opacity;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.4));
+}
+.prop__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+/* translucent motion-blur disc in the same tilted plane — fades in as the
+   blades fade out, so at full spin the prop reads as an indistinct disc */
+.prop__disc {
+  position: absolute;
+  inset: -4%;
+  transform-origin: 50% 50%;
+  transform: rotateX(58deg);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(234, 242, 252, 0.5) 14%, rgba(212, 226, 242, 0.34) 46%, rgba(200, 214, 232, 0.12) 66%, transparent 76%);
+  filter: blur(3.5px);
+  opacity: 0;
+}
+
+/* ===== ground shadow ===== */
+.drone-shadow {
+  position: absolute;
+  left: 50%;
+  top: 86%;
+  width: calc(var(--drone-w) * 0.82);
+  height: calc(var(--drone-w) * 0.2);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.18) 58%, transparent 74%);
+  filter: blur(11px);
+  will-change: transform, opacity;
+}
+
+/* ===== rotor wash — expanding rings of displaced air on the ground ===== */
+.rotorwash {
+  position: absolute;
+  left: 50%;
+  top: 84%;
+  width: calc(var(--drone-w) * 0.9);
+  height: calc(var(--drone-w) * 0.32);
+  transform: translate(-50%, -50%);
+  opacity: 0; /* gated by scroll/rotor spin */
+}
+.rw-ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 1px solid rgba(190, 206, 224, 0.4);
+  transform: translate(-50%, -50%) scale(0.2);
+  filter: blur(1px);
+  opacity: 0;
+  animation: rwExpand 3.4s ease-out infinite;
+}
+.rw-ring:nth-child(2) { animation-delay: 0.85s; }
+.rw-ring:nth-child(3) { animation-delay: 1.7s; }
+.rw-ring:nth-child(4) { animation-delay: 2.55s; }
+@keyframes rwExpand {
+  0%   { transform: translate(-50%, -50%) scale(0.18); opacity: 0; }
+  18%  { opacity: 0.45; }
+  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+/* ===== lift-off dust kick-up (opacity gated by scroll burst) ===== */
+.dust {
+  position: absolute;
+  left: 50%;
+  top: 88%;
+  width: calc(var(--drone-w) * 1.1);
+  height: calc(var(--drone-w) * 0.4);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+.dust__puff {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(var(--drone-w) * 0.34);
+  height: calc(var(--drone-w) * 0.34);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(176, 188, 206, 0.4), transparent 66%);
+  filter: blur(7px);
+  transform: translate(-50%, 0) scale(0.3);
+  animation: dustBillow 2.6s ease-out infinite;
+  animation-delay: calc(var(--i) * -0.37s);
+}
+@keyframes dustBillow {
+  0%   { transform: translate(-50%, 10%) scale(0.25); opacity: 0; }
+  25%  { opacity: 0.8; }
+  100% {
+    transform: translate(calc(-50% + (var(--i) - 3) * 26px), -70%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* ===== downwash streaks beneath the craft while airborne ===== */
+.downwash {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  width: calc(var(--drone-w) * 0.62);
+  height: calc(var(--drone-w) * 0.5);
+  transform: translate(-50%, 0);
+  opacity: 0;
+}
+.downwash span {
+  position: absolute;
+  top: 0;
+  width: 1.5px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(206, 218, 234, 0.45), transparent 90%);
+  filter: blur(0.6px);
+  animation: downStream 0.9s linear infinite;
+}
+.downwash span:nth-child(1) { left: 18%; animation-delay: -0.1s; }
+.downwash span:nth-child(2) { left: 36%; animation-delay: -0.45s; }
+.downwash span:nth-child(3) { left: 52%; animation-delay: -0.2s; }
+.downwash span:nth-child(4) { left: 68%; animation-delay: -0.6s; }
+.downwash span:nth-child(5) { left: 84%; animation-delay: -0.35s; }
+@keyframes downStream {
+  0%   { transform: translateY(-30%) scaleY(0.6); opacity: 0; }
+  30%  { opacity: 1; }
+  100% { transform: translateY(60%) scaleY(1.2); opacity: 0; }
+}
+
+/* keep the drone clear of the heading on narrower viewports */
+@media (max-width: 1100px) {
+  .drone-pos { left: 76%; top: 40%; }
+}
+@media (max-width: 840px) {
+  .drone-scene { --drone-w: clamp(120px, 32vw, 200px); }
+  .drone-pos { left: 70%; top: 30%; }
+}
+@media (max-width: 560px) {
+  .drone-pos { left: 60%; top: 26%; opacity: 0.7; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-    scroll-behavior: auto !important;
+  .hint .ar::after,
+  .term::after,
+  .boresight,
+  .lvl,
+  .pathbar,
+  .term-live .dot,
+  .drone-hover,
+  .drone__glow,
+  .cloud,
+  .mote,
+  .rw-ring,
+  .dust__puff,
+  .downwash span {
+    animation: none;
   }
 }
