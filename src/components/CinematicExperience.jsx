@@ -56,6 +56,7 @@ export default function CinematicExperience() {
     const id = setTimeout(() => {
       setActiveIndex((i) => (i + 1) % bands.length);
     }, AUTO_MS);
+    return () => clearTimeout(id);
   }, [activeIndex, paused, reduce]);
 
   // ── Hash listener: jump to chapter when navbar links are clicked ──────

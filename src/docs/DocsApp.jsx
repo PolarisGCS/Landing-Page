@@ -1,7 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import DocsLayout from "./DocsLayout";
 import DocsPage from "./DocsPage";
-import { docs, docsBySlug } from "../data/docs";
+import { docs, docsBySlug } from "./docsData";
 
 export default function DocsApp() {
   return (

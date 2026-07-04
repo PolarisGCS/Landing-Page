@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { docs } from "../data/docs";
+import { docs } from "./docsData";
 
 export default function DocsNav() {
   return (
