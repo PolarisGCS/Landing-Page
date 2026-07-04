@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { framesAlreadyLoaded, markFramesLoaded } from "../lib/frameCache";
 
 const TOTAL = 480;
 const src = (i) => `/frames/f${String(i).padStart(4, "0")}.jpg`;
@@ -9,8 +10,15 @@ const src = (i) => `/frames/f${String(i).padStart(4, "0")}.jpg`;
  * progress, and draws it to a canvas. No video seeking, no decode latency,
  * no browser throttling — just an array lookup and a drawImage.
  */
-export default function Background({ reducedMotion = false, staticFrame = false, onProgress }) {
+export default function Background({ reducedMotion = false, staticFrame = false, onProgress, skip = false }) {
   const canvasRef = useRef(null);
+  // Read via ref inside the rAF loop so toggling `skip` (the user hitting the
+  // calibration widget's Skip button) never tears down and restarts the
+  // preloading effect below.
+  const skipRef = useRef(skip);
+  useEffect(() => {
+    skipRef.current = skip;
+  }, [skip]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -52,14 +60,19 @@ export default function Background({ reducedMotion = false, staticFrame = false,
     // Smoothed drone lag positions — lerp toward the drone's share of the shake
     let lagX = 0, lagY = 0;
 
-    // Preload every frame into browser memory so drawImage is instant.
-    // Report progress so callers can gate the UI until the sequence is ready —
-    // the browser's per-host connection cap means frames trickle in, and
-    // scrubbing ahead of what's loaded otherwise reads as the video "freezing".
+    // Until every frame is in memory, hold on a single static frame instead of
+    // scrubbing — scrubbing ahead of what's downloaded reads as the video
+    // "freezing". Frames are cached across route switches within the tab
+    // session, so a remount after the first load skips this gate entirely.
+    let allLoaded = framesAlreadyLoaded();
     let loadedCount = 0;
     const reportDone = () => {
       loadedCount += 1;
       onProgress?.(loadedCount, TOTAL);
+      if (loadedCount >= TOTAL) {
+        allLoaded = true;
+        markFramesLoaded();
+      }
     };
     for (let i = 0; i < TOTAL; i++) {
       const img = new Image();
@@ -78,6 +91,16 @@ export default function Background({ reducedMotion = false, staticFrame = false,
     };
 
     const tick = () => {
+      if (!allLoaded && !skipRef.current) {
+        // hold the very first frame — no scroll-scrub, no camera shake —
+        // until the whole sequence has loaded (or the user skips ahead)
+        const first = images[0];
+        if (first && first.complete && first.naturalWidth > 0) drawCover(first);
+        canvas.style.transform = "";
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
       const max = document.documentElement.scrollHeight - window.innerHeight;
       const p = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
       const idx = Math.min(TOTAL - 1, Math.floor(p * TOTAL));

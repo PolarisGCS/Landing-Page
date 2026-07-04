@@ -1,4 +1,4 @@
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import type { RefObject } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -32,6 +32,7 @@ const SPIN_DIR = [1, 1, -1, -1];
 const SPIN_TRIM = [1.0, 0.965, 1.028, 0.983];
 
 const MAX_VEL = 1820; // peak blade angular velocity (deg/s)
+const IDLE_VEL = MAX_VEL * 0.3; // gentle idle spin while frames are still loading (grounded, not flying)
 const SPOOL_END = 0.08; // rotors hit full speed by 8% scroll (video ascends fast)
 const SPOOL_RATE = 2.0;  // faster inertia to match video's quick climb pace
 const LIFTOFF_AT = 0.10; // gear lifts at 10% scroll — early, matching video
@@ -58,7 +59,14 @@ const pulse = (x: number, c: number, w: number) =>
  * Blade spin + micro-shake run on gsap.ticker so the rotors spool up with
  * motor inertia rather than snapping to the scrollbar. Transforms/opacity only.
  */
-export function useDroneFlight(refs: DroneFlightRefs, reduced = false): void {
+export function useDroneFlight(refs: DroneFlightRefs, reduced = false, locked = false): void {
+  // Read via ref inside the ticker so toggling `locked` (frames finish loading
+  // mid-session) never tears down and recreates the ScrollTrigger/ticker.
+  const lockedRef = useRef(locked);
+  useEffect(() => {
+    lockedRef.current = locked;
+  }, [locked]);
+
   useLayoutEffect(() => {
     const root = document.documentElement;
 
@@ -159,13 +167,21 @@ export function useDroneFlight(refs: DroneFlightRefs, reduced = false): void {
       const tick = () => {
         const dt = gsap.ticker.deltaRatio() / 60;
 
-        const max = ScrollTrigger.maxScroll(window) || 1;
-        const rawP = clamp01(window.pageYOffset / max);
-        smoothP += (rawP - smoothP) * 0.10;
-        apply(smoothP);
-
-        // accelerating spool-up (slow → fast), like a motor coming up to speed
-        const target = MAX_VEL * Math.pow(clamp01(progress / SPOOL_END), 1.5);
+        let target;
+        if (lockedRef.current) {
+          // Grounded while frames are still loading: hold at rest (no lift,
+          // no shake, no wash) but keep the rotors visibly idling rather than
+          // dead — reads as "engine warming up", not "stuck".
+          apply(0);
+          target = IDLE_VEL;
+        } else {
+          const max = ScrollTrigger.maxScroll(window) || 1;
+          const rawP = clamp01(window.pageYOffset / max);
+          smoothP += (rawP - smoothP) * 0.10;
+          apply(smoothP);
+          // accelerating spool-up (slow → fast), like a motor coming up to speed
+          target = MAX_VEL * Math.pow(clamp01(progress / SPOOL_END), 1.5);
+        }
         const k = Math.min(1, dt * SPOOL_RATE);
         let meanSpeed = 0;
 

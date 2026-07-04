@@ -7,6 +7,7 @@ import Background from "./Background";
 import Drone from "./Drone";
 import { useReducedMotion } from "../hooks/useReducedMotion";
 import { bands } from "../data/content";
+import { framesAlreadyLoaded } from "../lib/frameCache";
 
 /** Scroll distance — taller track = slower, smoother scrub across the video. */
 const TRACK_VH = 1000;
@@ -39,31 +40,28 @@ export default function CinematicExperience() {
 
   const reduce = useReducedMotion();
 
-  // ── Preloader: block interaction until every background frame has loaded.
-  // Frames trickle in behind the browser's per-host connection cap, so
-  // scrubbing ahead of what's downloaded reads as the video "freezing" —
-  // show progress instead and reveal the scene only once it's all in memory.
-  const [pct, setPct] = useState(0);
-  const [ready, setReady] = useState(false);
-  const [showPreloader, setShowPreloader] = useState(true);
+  // ── Frame gate: while the 480 background frames are still downloading,
+  // Background holds a single static frame and Drone stays grounded (idle
+  // props only) instead of scrubbing/lifting off a partially loaded sequence.
+  // A side widget shows progress; the user can Skip to fly on partial frames
+  // (Background gracefully falls back to the nearest loaded frame already).
+  const [pct, setPct] = useState(() => (framesAlreadyLoaded() ? 100 : 0));
+  const [ready, setReady] = useState(framesAlreadyLoaded);
+  const [skipped, setSkipped] = useState(false);
+  const [showCalib, setShowCalib] = useState(() => !framesAlreadyLoaded());
+  const unlocked = ready || skipped;
 
   const handleProgress = useCallback((loaded, total) => {
     setPct(Math.round((loaded / total) * 100));
     if (loaded >= total) setReady(true);
   }, []);
+  const handleSkip = useCallback(() => setSkipped(true), []);
 
   useEffect(() => {
-    if (!ready) return;
-    const id = setTimeout(() => setShowPreloader(false), 650);
+    if (!unlocked || !showCalib) return;
+    const id = setTimeout(() => setShowCalib(false), 500);
     return () => clearTimeout(id);
-  }, [ready]);
-
-  useEffect(() => {
-    document.documentElement.style.overflow = ready ? "" : "hidden";
-    return () => {
-      document.documentElement.style.overflow = "";
-    };
-  }, [ready]);
+  }, [unlocked, showCalib]);
 
   // ── CLI carousel: self-paced, independent of scroll ──────────────────
   const [activeIndex, setActiveIndex] = useState(0);
@@ -100,6 +98,12 @@ export default function CinematicExperience() {
     return () => window.removeEventListener("hashchange", handleHash);
   }, [select]);
 
+  // Read via ref so this loop doesn't need to restart when `unlocked` flips.
+  const unlockedRef = useRef(unlocked);
+  useEffect(() => {
+    unlockedRef.current = unlocked;
+  }, [unlocked]);
+
   // ── Scroll loop: ONLY the background-video / drone-flight chrome ──────
   useEffect(() => {
     let pTarget = 0;
@@ -120,7 +124,11 @@ export default function CinematicExperience() {
     };
 
     const frame = () => {
-      p += (pTarget - p) * (reduce ? 0.3 : 0.11);
+      // While frames are still loading the drone stays grounded, so the HUD
+      // readout (alt/mode/batt) and progress chrome must stay grounded too —
+      // otherwise the instruments would read "climbing" over a still-parked drone.
+      const target = unlockedRef.current ? pTarget : 0;
+      p += (target - p) * (reduce ? 0.3 : 0.11);
 
       // push flight telemetry to the stat line (no React state)
       statRef.current?.set(telemetryFor(p));
@@ -148,22 +156,28 @@ export default function CinematicExperience() {
 
   return (
     <>
-      {showPreloader && (
+      {showCalib && (
         <div
-          className={`preloader${ready ? " preloader--done" : ""}`}
+          className={`calib${unlocked ? " calib--done" : ""}`}
           role="status"
           aria-live="polite"
         >
-          <div className="preloader__mark">POLARISGCS</div>
-          <div className="preloader__bar">
-            <div className="preloader__fill" style={{ width: `${pct}%` }} />
+          <div className="calib__label">CALIBRATING FLIGHT</div>
+          <div className="calib__bar">
+            <div className="calib__fill" style={{ width: `${pct}%` }} />
           </div>
-          <div className="preloader__pct">{pct}% · CALIBRATING FLIGHT FEED</div>
+          <div className="calib__row">
+            <span className="calib__pct">{pct}%</span>
+            <button type="button" className="calib__skip" onClick={handleSkip}>
+              Skip
+            </button>
+          </div>
+          <div className="calib__note">The drone starts flying after calibration!</div>
         </div>
       )}
 
-      <Background reducedMotion={reduce} onProgress={handleProgress} />
-      <Drone reducedMotion={reduce} />
+      <Background reducedMotion={reduce} onProgress={handleProgress} skip={unlocked} />
+      <Drone reducedMotion={reduce} locked={!unlocked} />
       <div className="overlay" />
       <div className="pathbar" ref={pathRef} />
 

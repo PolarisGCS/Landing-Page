@@ -74,9 +74,12 @@ function PropellerSVG() {
 interface DroneProps {
   className?: string;
   reducedMotion?: boolean;
+  /** While true, the airframe stays grounded (no lift/shake/wash) but the
+   *  propellers keep idle-spinning — used while background frames load. */
+  locked?: boolean;
 }
 
-export default function Drone({ className = "", reducedMotion = false }: DroneProps) {
+export default function Drone({ className = "", reducedMotion = false, locked = false }: DroneProps) {
   const liftRef = useRef<HTMLDivElement | null>(null);
   const shakeRef = useRef<HTMLDivElement | null>(null);
   const shadowRef = useRef<HTMLDivElement | null>(null);
@@ -98,6 +101,7 @@ export default function Drone({ className = "", reducedMotion = false }: DronePr
       discs: discRefs.current,
     },
     reducedMotion,
+    locked,
   );
 
   return (
