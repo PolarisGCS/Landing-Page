@@ -89,6 +89,18 @@ In the captures shown above:
 
 ---
 
+## Environmental Awareness via Google Weather API
+
+Failsafe decisions don't rely on onboard telemetry alone — ground-truth environmental conditions matter too. PolarisGCS layers live weather data into the same dashboard surfaces operators use for failsafe monitoring.
+
+* **Gateway-Published Weather (Primary Source)**: The local gateway at the flying site is the authoritative source. It pushes a `weather_update` message over its existing cloud WebSocket connection, carrying wind speed, wind direction, visibility, condition, and temperature — sourced from a real on-site sensor or a simulated value during SITL sessions. The frontend and preflight checks never need to know which.
+* **Google Weather API (Fallback Source)**: If no gateway has published a fresh reading within the last two minutes, the backend automatically falls back to the [Google Weather API](https://developers.google.com/maps/documentation/weather) (`weather.googleapis.com`), fetching current conditions for the vehicle's last known coordinates. Results are grid-cached for five minutes to limit API calls.
+* **Unified Interface**: Regardless of source, the same five fields (wind speed, wind direction, visibility, condition, temperature) are exposed to the dashboard, so operators see one consistent weather readout whether they're flying a real vehicle in the field or running a SITL swarm indoors.
+
+This environmental data feeds directly into failsafe judgment calls — e.g., high wind speed or degraded visibility readings help operators correlate a vibration or navigation anomaly with external conditions rather than a vehicle fault.
+
+---
+
 ## Step-by-Step: Monitoring Telemetry & Configuring Failsafes
 
 To manage live telemetry and enforce safety policies during flight operations:

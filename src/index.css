@@ -1371,7 +1371,6 @@ body {
 .docs-shell {
   position: relative;
   min-height: 100vh;
-  overflow-x: hidden;
   z-index: 1;
   background: var(--bg);
 }
