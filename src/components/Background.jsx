@@ -9,7 +9,7 @@ const src = (i) => `/frames/f${String(i).padStart(4, "0")}.jpg`;
  * progress, and draws it to a canvas. No video seeking, no decode latency,
  * no browser throttling — just an array lookup and a drawImage.
  */
-export default function Background({ reducedMotion = false }) {
+export default function Background({ reducedMotion = false, staticFrame = false }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -17,19 +17,34 @@ export default function Background({ reducedMotion = false }) {
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    // When staticFrame is requested (e.g. Products page) or reducedMotion is on,
+    // draw a single high-altitude drone frame without preloading 240 images or listening to scroll.
+    if (staticFrame || reducedMotion) {
+      const img = new Image();
+      img.src = src(120);
+      img.onload = () => {
+        const cw = canvas.width, ch = canvas.height;
+        const iw = img.naturalWidth || 1280, ih = img.naturalHeight || 720;
+        const scale = Math.max(cw / iw, ch / ih);
+        const sw = iw * scale, sh = ih * scale;
+        ctx.drawImage(img, (cw - sw) / 2, (ch - sh) / 2, sw, sh);
+      };
+      return () => window.removeEventListener("resize", resize);
+    }
+
     const images = new Array(TOTAL).fill(null);
     let rafId;
     let lastIdx = -1;
     // Smoothed drone lag positions — lerp toward the drone's share of the shake
     let lagX = 0, lagY = 0;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      lastIdx = -1; // force redraw after resize
-    };
-    resize();
-    window.addEventListener("resize", resize);
 
     // Preload every frame into browser memory so drawImage is instant
     for (let i = 0; i < TOTAL; i++) {
