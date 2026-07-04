@@ -56,8 +56,22 @@ export default function CinematicExperience() {
     const id = setTimeout(() => {
       setActiveIndex((i) => (i + 1) % bands.length);
     }, AUTO_MS);
-    return () => clearTimeout(id);
   }, [activeIndex, paused, reduce]);
+
+  // ── Hash listener: jump to chapter when navbar links are clicked ──────
+  useEffect(() => {
+    const handleHash = () => {
+      const h = window.location.hash;
+      if (h === "#fleet") select(1);
+      else if (h === "#telemetry") select(2);
+      else if (h === "#missions") select(3);
+      else if (h === "#docs") select(5);
+      else if (h === "#deploy") select(7);
+    };
+    handleHash();
+    window.addEventListener("hashchange", handleHash);
+    return () => window.removeEventListener("hashchange", handleHash);
+  }, [select]);
 
   // ── Scroll loop: ONLY the background-video / drone-flight chrome ──────
   useEffect(() => {
