@@ -17,10 +17,13 @@ export default function Background({ reducedMotion = false, staticFrame = false 
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
 
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
     };
     resize();
     window.addEventListener("resize", resize);
