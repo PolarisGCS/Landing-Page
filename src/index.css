@@ -68,6 +68,14 @@ body {
   color: var(--bg);
 }
 
+/* blank hold before the drone body + first frame are both in memory */
+.core-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: var(--bg);
+}
+
 /* ===== premium aerospace backdrop (fixed, full-bleed, z below everything) ===== */
 .sky {
   position: fixed;
@@ -1366,13 +1374,6 @@ body {
   overflow-x: hidden;
   z-index: 1;
   background: var(--bg);
-}
-/* Docs is real scrolling text, not a fixed hero — the nav needs a solid
-   backdrop here so headings don't scroll through its transparent chrome. */
-.docs-shell .nav {
-  background: rgba(7, 11, 20, 0.75);
-  backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--line-soft);
 }
 .docs-body {
   display: flex;

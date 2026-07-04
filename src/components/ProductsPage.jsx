@@ -114,6 +114,12 @@ export default function ProductsPage() {
     };
   }, []);
 
+  // This page remounts fresh every time it's navigated to (unlike the
+  // persistent home stage), so it needs its own scroll reset.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const copyCommand = useCallback((id, text) => {
     navigator.clipboard.writeText(text);
     setCopiedId(id);

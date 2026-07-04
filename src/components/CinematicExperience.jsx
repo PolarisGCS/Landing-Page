@@ -40,6 +40,29 @@ export default function CinematicExperience() {
 
   const reduce = useReducedMotion();
 
+  // ── Core-asset gate: never paint the page before the drone body and the
+  // first background frame are both loaded — otherwise the hero would flash
+  // in with a missing drone image / blank canvas for a frame. This only
+  // matters once: HomeStage (App.jsx) keeps this component mounted for the
+  // app's whole lifetime, so it's never remounted after the first load.
+  const [coreReady, setCoreReady] = useState(false);
+  useEffect(() => {
+    let done = 0;
+    const markDone = () => {
+      done += 1;
+      if (done >= 2) setCoreReady(true);
+    };
+    const drone = new Image();
+    drone.onload = markDone;
+    drone.onerror = markDone;
+    drone.src = "/drone_body.png";
+
+    const frame = new Image();
+    frame.onload = markDone;
+    frame.onerror = markDone;
+    frame.src = "/frames/f0001.jpg";
+  }, []);
+
   // ── Frame gate: while the 480 background frames are still downloading,
   // Background holds a single static frame and Drone stays grounded (idle
   // props only) instead of scrubbing/lifting off a partially loaded sequence.
@@ -153,6 +176,10 @@ export default function CinematicExperience() {
       window.removeEventListener("mousemove", onMouseMove);
     };
   }, [reduce]);
+
+  if (!coreReady) {
+    return <div className="core-gate" />;
+  }
 
   return (
     <>
