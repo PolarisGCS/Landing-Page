@@ -49,13 +49,18 @@ To connect an edge gateway (Desktop or Android) to a user's cloud account secure
 
 ![Gateway Account Binding Workflow](/context-images/diag_03_pairing.png)
 
-| Gateway Pairing Screen | Web Dashboard Account Binding |
-| :---: | :---: |
-| ![Account Binding Gateway — Backend URL entry and pairing code generation](/context-images/account_binding_gateway.png) | ![Account Binding Frontend — Web dashboard pairing code verification and account authentication](/context-images/account_binding_frontend.png) |
+#### Step 1: Generate Pairing Code on the Gateway
+On the gateway application, the operator inputs the target Cloud Backend URL and initiates binding. The gateway contacts the server and generates a unique, time-limited 6-character pairing code:
 
-1. On the gateway application (left), the operator inputs the target Cloud Backend URL and initiates binding. The gateway contacts the server and generates a unique, time-limited 6-character pairing code.
-2. On the Cloud-GCS web dashboard (right), the operator navigates to their account settings, enters the 6-character code, and confirms authorization.
-3. The backend validates the token and issues a persistent cryptographic cryptographic JWT to the gateway, instantly linking all downstream edge telemetry to the operator's account.
+![Account Binding Gateway — Backend URL entry and pairing code generation](/context-images/account_binding_gateway.png)
+
+#### Step 2: Confirm Authorization on the Web Dashboard
+On the Cloud-GCS web dashboard, the operator navigates to their account settings, enters the 6-character code, and confirms authorization:
+
+![Account Binding Frontend — Web dashboard pairing code verification and account authentication](/context-images/account_binding_frontend.png)
+
+#### Step 3: Automated Cryptographic Linking
+Once authorized, the backend validates the token and issues a persistent cryptographic JWT to the gateway, instantly linking all downstream edge telemetry to the operator's account.
 
 ---
 

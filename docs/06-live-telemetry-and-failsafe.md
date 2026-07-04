@@ -75,13 +75,17 @@ A critical engineering breakthrough in PolarisGCS is **Failsafe Policy Consisten
 
 The Cloud-GCS dashboard provides dedicated administrative screens for auditing failsafe histories and configuring automated recovery rules.
 
-| Failsafe Event Timeline (Frontend) | Failsafe Policy Configuration (Backend) |
-| :---: | :---: |
-| ![Failsafe Policies Frontend — Interactive timeline of failsafe triggers, recoveries, and stand-down events](/context-images/failsafe_policies_frontend.png) | ![Failsafe Policies Backend — Centralized policy configuration and automated RTL rule definitions](/context-images/failsafe_policies_backend.png) |
+**Failsafe Event Timeline (Frontend)**
+
+![Failsafe Policies Frontend — Interactive timeline of failsafe triggers, recoveries, and stand-down events](/context-images/failsafe_policies_frontend.png)
+
+**Failsafe Policy Configuration (Backend)**
+
+![Failsafe Policies Backend — Centralized policy configuration and automated RTL rule definitions](/context-images/failsafe_policies_backend.png)
 
 In the captures shown above:
-* **The Event Timeline (Left)**: Renders a color-coded chronological log of all historical anomalies across the fleet. Operators can track the precise timestamp when a failure was injected or triggered (red), monitor automated system recovery actions (yellow), and verify when the aircraft safely stood down or returned to base (green).
-* **The Policy Editor (Right)**: Allows administrators to configure centralized safety thresholds — defining exact battery voltage cutoffs, geofence radii, and automated RTL behavior rules that synchronize across every connected gateway.
+* **The Event Timeline (Above)**: Renders a color-coded chronological log of all historical anomalies across the fleet. Operators can track the precise timestamp when a failure was injected or triggered (red), monitor automated system recovery actions (yellow), and verify when the aircraft safely stood down or returned to base (green).
+* **The Policy Editor (Below)**: Allows administrators to configure centralized safety thresholds — defining exact battery voltage cutoffs, geofence radii, and automated RTL behavior rules that synchronize across every connected gateway.
 
 ---
 

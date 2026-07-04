@@ -2,6 +2,101 @@ import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { docs } from "./docsData";
+import { useLightbox } from "./LightboxContext";
+
+const BASE = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+
+/** Screenshots of small popovers/dialogs read better capped narrower than full-width shots. */
+function isCompactScreenshot(src, alt) {
+  const s = (src || "").toLowerCase();
+  const a = (alt || "").toLowerCase();
+  return (
+    s.includes("connected_devices") ||
+    s.includes("add_drone_dialog") ||
+    s.includes("account_binding") ||
+    s.includes("preflight_checklist") ||
+    a.includes("popover") ||
+    a.includes("dialog")
+  );
+}
+
+/** Dense data-table screenshots (failsafe policies, admin tables) need the
+ * extra width — they were previously squeezed into half-width table cells. */
+function isDenseScreenshot(src) {
+  const s = (src || "").toLowerCase();
+  return s.includes("failsafe_policies_") || s.includes("admin_page_");
+}
+
+function MarkdownImage({ src, alt }) {
+  const { open } = useLightbox();
+  const finalSrc = src?.startsWith("/") ? BASE + src : src;
+  const compact = isCompactScreenshot(src, alt);
+  const dense = isDenseScreenshot(src);
+  const sizeClass = compact ? " docs-image-figure--sm" : dense ? " docs-image-figure--lg" : "";
+  return (
+    <figure className={`docs-image-figure${sizeClass}`}>
+      <button
+        type="button"
+        className="docs-image-frame docs-image-frame--clickable"
+        onClick={() => open(finalSrc, alt)}
+        aria-label={`Expand image: ${alt || "PolarisGCS screenshot"}`}
+      >
+        <img src={finalSrc} alt={alt || "PolarisGCS screenshot"} loading="lazy" />
+        <span className="docs-image-frame__zoom" aria-hidden="true">⤢</span>
+      </button>
+      {alt && <figcaption>{alt}</figcaption>}
+    </figure>
+  );
+}
+
+function MarkdownTable({ children }) {
+  return (
+    <div className="docs-table-wrap">
+      <table>{children}</table>
+    </div>
+  );
+}
+
+function MarkdownBlockquote({ children }) {
+  return <blockquote className="docs-blockquote">{children}</blockquote>;
+}
+
+/** react-markdown already wraps fenced code in its own <pre> (AST is
+ * `pre > code`) — returning another <pre> here would nest them. The `pre`
+ * override below owns the block-level box; this only decides inline vs. block
+ * styling for the <code> itself. */
+function CodeBlock({ className, children, ...props }) {
+  const match = /language-(\w+)/.exec(className || "");
+  const codeText = String(children).replace(/\n$/, "");
+  const isBlock = Boolean(match) || codeText.includes("\n");
+
+  if (!isBlock) {
+    return (
+      <code className="docs-inline-code" {...props}>
+        {children}
+      </code>
+    );
+  }
+
+  return (
+    <code className={className} {...props}>
+      {children}
+    </code>
+  );
+}
+
+function MarkdownPre({ children }) {
+  return <pre className="docs-code-block">{children}</pre>;
+}
+
+/** Hoisted so ReactMarkdown gets a stable components map across renders. */
+const markdownComponents = {
+  img: MarkdownImage,
+  table: MarkdownTable,
+  blockquote: MarkdownBlockquote,
+  pre: MarkdownPre,
+  code: CodeBlock,
+};
 
 export default function DocsPage({ doc }) {
   const isOverview = doc.slug === "overview";
@@ -9,121 +104,20 @@ export default function DocsPage({ doc }) {
   return (
     <article className="docs-page">
       <header className="docs-page__header">
+        <p className="docs-page__eyebrow">Documentation</p>
         <h1>{doc.title}</h1>
         <p className="docs-page__tagline">{doc.tagline}</p>
       </header>
 
       <div className="docs-markdown-body">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            img: ({ src, alt }) => {
-              const base = import.meta.env.BASE_URL || "/";
-              const finalSrc = src?.startsWith("/")
-                ? base.replace(/\/$/, "") + src
-                : src;
-              return (
-                <figure className="docs-image-figure my-8">
-                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-md transition-transform duration-300 hover:border-slate-300">
-                    <img
-                      src={finalSrc}
-                      alt={alt || "PolarisGCS Screenshot"}
-                      className="w-full h-auto object-cover max-h-[600px]"
-                      loading="lazy"
-                    />
-                  </div>
-                  {alt && (
-                    <figcaption className="mt-3 text-center text-sm text-slate-500 font-mono tracking-wide">
-                      {alt}
-                    </figcaption>
-                  )}
-                </figure>
-              );
-            },
-            table: ({ children }) => (
-              <div className="my-6 overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
-                <table className="w-full text-left border-collapse">{children}</table>
-              </div>
-            ),
-            th: ({ children }) => (
-              <th className="border-b border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-900 tracking-wider">
-                {children}
-              </th>
-            ),
-            td: ({ children }) => (
-              <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-700">
-                {children}
-              </td>
-            ),
-            blockquote: ({ children }) => (
-              <blockquote className="my-6 border-l-4 border-sky-500 bg-sky-50 px-6 py-4 rounded-r-lg text-slate-700 italic shadow-sm">
-                {children}
-              </blockquote>
-            ),
-            code: ({ inline, className, children, ...props }) => {
-              const match = /language-(\w+)/.exec(className || "");
-              return !inline ? (
-                <div className="my-6 rounded-lg border border-slate-200 bg-slate-50 p-4 shadow-sm overflow-x-auto">
-                  {match && (
-                    <div className="mb-2 text-xs font-mono uppercase text-sky-600 font-bold tracking-wider">
-                      {match[1]}
-                    </div>
-                  )}
-                  <pre className="text-sm font-mono text-slate-800 leading-relaxed">
-                    <code className={className} {...props}>
-                      {children}
-                    </code>
-                  </pre>
-                </div>
-              ) : (
-                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sm font-mono text-slate-800 border border-slate-200" {...props}>
-                  {children}
-                </code>
-              );
-            },
-            h1: ({ children }) => (
-              <h1 className="mt-12 mb-6 text-3xl font-bold tracking-tight text-slate-900 border-b border-slate-200 pb-4">
-                {children}
-              </h1>
-            ),
-            h2: ({ children }) => (
-              <h2 className="mt-10 mb-5 text-2xl font-bold tracking-tight text-slate-900">
-                {children}
-              </h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className="mt-8 mb-4 text-xl font-semibold text-sky-600">
-                {children}
-              </h3>
-            ),
-            p: ({ children }) => (
-              <p className="my-4 text-slate-700 leading-relaxed">
-                {children}
-              </p>
-            ),
-            ul: ({ children }) => (
-              <ul className="my-4 list-disc pl-6 space-y-2 text-slate-700">
-                {children}
-              </ul>
-            ),
-            ol: ({ children }) => (
-              <ol className="my-4 list-decimal pl-6 space-y-2 text-slate-700">
-                {children}
-              </ol>
-            ),
-            li: ({ children }) => (
-              <li className="leading-relaxed">{children}</li>
-            ),
-          }}
-        >
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
           {doc.content}
         </ReactMarkdown>
       </div>
 
       {isOverview && (
-        <section className="docs-section docs-deepdive-grid mt-16 pt-8 border-t border-slate-200">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">Deep dives</h2>
-
+        <section className="docs-deepdive">
+          <h2>Deep dives</h2>
           <div className="docs-cards">
             {docs
               .filter((d) => d.slug !== "overview")
@@ -131,6 +125,7 @@ export default function DocsPage({ doc }) {
                 <Link key={d.slug} to={`/docs/${d.slug}`} className="docs-card">
                   <span className="docs-card__title">{d.title}</span>
                   <span className="docs-card__tagline">{d.tagline}</span>
+                  <span className="docs-card__arrow" aria-hidden="true">→</span>
                 </Link>
               ))}
           </div>

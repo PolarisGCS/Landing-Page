@@ -35,16 +35,17 @@ This script verifies database credentials, generates a cryptographically salted 
 
 When an administrator signs into the Cloud-GCS web dashboard, the navigation chrome expands automatically to unlock the **Admin Console** — presenting specialized tabs for Overview, Fleet, Users, Sessions, Missions, Audit, and System health.
 
-| Admin Fleet & Users Management Table | Admin Flight Sessions & Audit Table |
-| :---: | :---: |
-| ![Admin Users and Fleet Table — Centralized governance view showing test accounts, admin badges, and fleet assignments](/context-images/admin_page_fleet.png) | ![Admin Sessions Table — Historical flight session logs, active connection durations, and audit tracking](/context-images/admin_page_sessions.png) |
+**Admin Fleet & Users Management Table**
+
+![Admin Users and Fleet Table — Centralized governance view showing test accounts, admin badges, and fleet assignments](/context-images/admin_page_fleet.png)
+
+**Admin Flight Sessions & Audit Table**
+
+![Admin Sessions Table — Historical flight session logs, active connection durations, and audit tracking](/context-images/admin_page_sessions.png)
 
 As demonstrated across the administrative captures above:
-* **The Fleet & Users View (Left)**: Displays a centralized governance table aggregating every registered user and bound vehicle across the deployment. Administrators can clearly contrast accounts bearing the purple **Admin** badge against standard **User** roles, monitor how many drones are assigned per tenant, and revoke compromised gateway binding tokens instantly.
-* **The Sessions & Audit View (Right)**: Provides an exhaustive historical log of all active and completed flight sessions. Administrators can audit exact takeoff timestamps, review total flight durations, inspect which gateway originated a flight, and export compliance reports for regulatory oversight.
-
-> [!WARNING]
-> **Data Privacy & PII Caution**: When capturing screenshots or generating administrative demo reports for public documentation or hackathon evaluations, **never display real user Personally Identifiable Information (PII)**. Always populate administrative tables using disposable test accounts and throwaway email addresses (e.g., `operator-test-1@polarisgcs.internal`).
+* **The Fleet & Users View (Above)**: Displays a centralized governance table aggregating every registered user and bound vehicle across the deployment. Administrators can clearly contrast accounts bearing the purple **Admin** badge against standard **User** roles, monitor how many drones are assigned per tenant, and revoke compromised gateway binding tokens instantly.
+* **The Sessions & Audit View (Below)**: Provides an exhaustive historical log of all active and completed flight sessions. Administrators can audit exact takeoff timestamps, review total flight durations, inspect which gateway originated a flight, and export compliance reports for regulatory oversight.
 
 ---
 

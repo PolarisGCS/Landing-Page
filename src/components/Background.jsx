@@ -28,11 +28,12 @@ export default function Background({ reducedMotion = false, staticFrame = false 
     resize();
     window.addEventListener("resize", resize);
 
-    // When staticFrame is requested (e.g. Products page) or reducedMotion is on,
+    // When staticFrame is requested (e.g. Products page or Docs dashboard) or reducedMotion is on,
     // draw a single high-altitude drone frame without preloading 240 images or listening to scroll.
     if (staticFrame || reducedMotion) {
       const img = new Image();
-      img.src = src(120);
+      const frameNum = typeof staticFrame === "number" ? staticFrame : 1;
+      img.src = src(frameNum);
       img.onload = () => {
         const cw = canvas.width, ch = canvas.height;
         const iw = img.naturalWidth || 1280, ih = img.naturalHeight || 720;

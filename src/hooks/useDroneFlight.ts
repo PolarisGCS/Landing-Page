@@ -35,7 +35,8 @@ const MAX_VEL = 1820; // peak blade angular velocity (deg/s)
 const SPOOL_END = 0.08; // rotors hit full speed by 8% scroll (video ascends fast)
 const SPOOL_RATE = 2.0;  // faster inertia to match video's quick climb pace
 const LIFTOFF_AT = 0.10; // gear lifts at 10% scroll — early, matching video
-const LIFT_VH = 0.55; // how far up the airframe travels, in viewport heights
+const LIFT_VH = 0.55; // how far up the airframe travels, in viewport heights, on screens with room to spare
+const TOP_CLEARANCE_PX = 96; // never climb closer to the viewport top than this (clears the fixed nav)
 const TILT_DEG = 58; // rotor-plane tilt toward the camera (matches the body's view angle)
 
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
@@ -76,7 +77,23 @@ export function useDroneFlight(refs: DroneFlightRefs, reduced = false): void {
     }
 
     const ctx = gsap.context(() => {
-      let liftPx = window.innerHeight * LIFT_VH;
+      // How far the airframe is *allowed* to climb without leaving the
+      // viewport. `.drone-pos` (the lift element's parent) is what CSS
+      // breakpoints position — it never itself carries the big lift
+      // transform, so its rect reflects the true at-rest position regardless
+      // of current scroll. On wide/short desktop layouts the drone starts
+      // near the bottom and 55vh of headroom comfortably fits above it; on
+      // narrow phones it starts much closer to the top (to clear the
+      // terminal card below), so the same fixed 55vh would carry it straight
+      // through the nav. Clamping to whatever headroom actually exists
+      // fixes that without hand-tuning a per-breakpoint constant.
+      const computeLiftPx = () => {
+        const restTop = refs.lift.current?.parentElement?.getBoundingClientRect().top ?? 0;
+        const headroom = Math.max(0, restTop - TOP_CLEARANCE_PX);
+        return Math.min(window.innerHeight * LIFT_VH, headroom);
+      };
+
+      let liftPx = computeLiftPx();
       let progress = 0;
       let climb = 0;
 
@@ -124,7 +141,7 @@ export function useDroneFlight(refs: DroneFlightRefs, reduced = false): void {
         end: () => ScrollTrigger.maxScroll(window),
         invalidateOnRefresh: true,
         onRefresh: () => {
-          liftPx = window.innerHeight * LIFT_VH;
+          liftPx = computeLiftPx();
           apply(progress);
         },
       });
