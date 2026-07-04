@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -29,6 +30,7 @@ function isDenseScreenshot(src) {
 
 function MarkdownImage({ src, alt }) {
   const { open } = useLightbox();
+  const [loaded, setLoaded] = useState(false);
   const finalSrc = src?.startsWith("/") ? BASE + src : src;
   const compact = isCompactScreenshot(src, alt);
   const dense = isDenseScreenshot(src);
@@ -41,7 +43,20 @@ function MarkdownImage({ src, alt }) {
         onClick={() => open(finalSrc, alt)}
         aria-label={`Expand image: ${alt || "PolarisGCS screenshot"}`}
       >
-        <img src={finalSrc} alt={alt || "PolarisGCS screenshot"} loading="lazy" />
+        {!loaded && (
+          <div className="docs-image-loading" aria-hidden="true">
+            <span className="docs-image-spinner" />
+          </div>
+        )}
+        <img
+          src={finalSrc}
+          alt={alt || "PolarisGCS screenshot"}
+          loading="lazy"
+          fetchPriority="high"
+          className={`docs-image${loaded ? " is-loaded" : ""}`}
+          onLoad={() => setLoaded(true)}
+          onError={() => setLoaded(true)}
+        />
         <span className="docs-image-frame__zoom" aria-hidden="true">⤢</span>
       </button>
       {alt && <figcaption>{alt}</figcaption>}

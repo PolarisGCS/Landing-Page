@@ -76,6 +76,12 @@ export default function Background({ reducedMotion = false, staticFrame = false,
     };
     for (let i = 0; i < TOTAL; i++) {
       const img = new Image();
+      // These 480 frames aren't visible content — Docs/Products screenshots
+      // are. Deprioritizing lets the browser's connection pool favor whatever
+      // the user is actually looking at instead of racing this background
+      // preload for bandwidth (this instance keeps loading even while hidden,
+      // since HomeStage never unmounts it).
+      img.fetchPriority = "low";
       img.onload = reportDone;
       img.onerror = reportDone;
       img.src = src(i + 1);
