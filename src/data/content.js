@@ -18,7 +18,7 @@ export const nav = {
     { label: "Telemetry", href: "#telemetry" },
     { label: "Missions", href: "#missions" },
     { label: "Deploy", href: "#deploy" },
-    { label: "Docs", href: "#docs" },
+    { label: "Docs", href: "#/docs" },
   ],
 };
 
