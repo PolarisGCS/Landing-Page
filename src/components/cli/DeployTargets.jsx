@@ -5,7 +5,7 @@ import { platforms } from "../../data/content";
 const GLYPH = ["◐", "▣", "▤"];
 
 /** Deploy targets (web / desktop / mobile) with link-up progress bars. */
-export default function DeployTargets({ caption = "deploy / available targets" }) {
+export default function DeployTargets({ caption = "products / available targets" }) {
   const [mounted, setMounted] = useState(false);
   const reduce = useReducedMotion();
 

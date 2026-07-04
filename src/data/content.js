@@ -17,7 +17,7 @@ export const nav = {
     { label: "Fleet", href: "#fleet" },
     { label: "Telemetry", href: "#telemetry" },
     { label: "Missions", href: "#missions" },
-    { label: "Deploy", href: "#deploy" },
+    { label: "Products", href: "#products" },
     { label: "Docs", href: "#/docs" },
   ],
 };
@@ -82,9 +82,9 @@ export const bands = [
     graphic: "feed",
   },
   {
-    channel: "gcs.deploy",
+    channel: "gcs.products",
     level: "info",
-    lines: ["Run it anywhere."],
+    lines: ["Explore products,", "run it anywhere."],
     comment: "web dashboard · desktop gateway · android gateway",
     graphic: "deploy",
   },
