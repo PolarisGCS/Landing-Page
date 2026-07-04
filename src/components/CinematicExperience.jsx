@@ -39,6 +39,32 @@ export default function CinematicExperience() {
 
   const reduce = useReducedMotion();
 
+  // ── Preloader: block interaction until every background frame has loaded.
+  // Frames trickle in behind the browser's per-host connection cap, so
+  // scrubbing ahead of what's downloaded reads as the video "freezing" —
+  // show progress instead and reveal the scene only once it's all in memory.
+  const [pct, setPct] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [showPreloader, setShowPreloader] = useState(true);
+
+  const handleProgress = useCallback((loaded, total) => {
+    setPct(Math.round((loaded / total) * 100));
+    if (loaded >= total) setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    const id = setTimeout(() => setShowPreloader(false), 650);
+    return () => clearTimeout(id);
+  }, [ready]);
+
+  useEffect(() => {
+    document.documentElement.style.overflow = ready ? "" : "hidden";
+    return () => {
+      document.documentElement.style.overflow = "";
+    };
+  }, [ready]);
+
   // ── CLI carousel: self-paced, independent of scroll ──────────────────
   const [activeIndex, setActiveIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -122,7 +148,21 @@ export default function CinematicExperience() {
 
   return (
     <>
-      <Background reducedMotion={reduce} />
+      {showPreloader && (
+        <div
+          className={`preloader${ready ? " preloader--done" : ""}`}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="preloader__mark">POLARISGCS</div>
+          <div className="preloader__bar">
+            <div className="preloader__fill" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="preloader__pct">{pct}% · CALIBRATING FLIGHT FEED</div>
+        </div>
+      )}
+
+      <Background reducedMotion={reduce} onProgress={handleProgress} />
       <Drone reducedMotion={reduce} />
       <div className="overlay" />
       <div className="pathbar" ref={pathRef} />

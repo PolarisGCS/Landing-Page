@@ -9,7 +9,7 @@ const src = (i) => `/frames/f${String(i).padStart(4, "0")}.jpg`;
  * progress, and draws it to a canvas. No video seeking, no decode latency,
  * no browser throttling — just an array lookup and a drawImage.
  */
-export default function Background({ reducedMotion = false, staticFrame = false }) {
+export default function Background({ reducedMotion = false, staticFrame = false, onProgress }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -40,7 +40,9 @@ export default function Background({ reducedMotion = false, staticFrame = false 
         const scale = Math.max(cw / iw, ch / ih);
         const sw = iw * scale, sh = ih * scale;
         ctx.drawImage(img, (cw - sw) / 2, (ch - sh) / 2, sw, sh);
+        onProgress?.(1, 1);
       };
+      img.onerror = () => onProgress?.(1, 1);
       return () => window.removeEventListener("resize", resize);
     }
 
@@ -50,9 +52,19 @@ export default function Background({ reducedMotion = false, staticFrame = false 
     // Smoothed drone lag positions — lerp toward the drone's share of the shake
     let lagX = 0, lagY = 0;
 
-    // Preload every frame into browser memory so drawImage is instant
+    // Preload every frame into browser memory so drawImage is instant.
+    // Report progress so callers can gate the UI until the sequence is ready —
+    // the browser's per-host connection cap means frames trickle in, and
+    // scrubbing ahead of what's loaded otherwise reads as the video "freezing".
+    let loadedCount = 0;
+    const reportDone = () => {
+      loadedCount += 1;
+      onProgress?.(loadedCount, TOTAL);
+    };
     for (let i = 0; i < TOTAL; i++) {
       const img = new Image();
+      img.onload = reportDone;
+      img.onerror = reportDone;
       img.src = src(i + 1);
       images[i] = img;
     }

@@ -1000,6 +1000,49 @@ body {
   100% { background-position: 220% 0; }
 }
 
+/* preloader — gates the scene until every background frame is in memory */
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: var(--bg);
+  transition: opacity 0.6s ease;
+}
+.preloader--done {
+  opacity: 0;
+  pointer-events: none;
+}
+.preloader__mark {
+  font-family: var(--display);
+  font-size: clamp(20px, 3vw, 28px);
+  letter-spacing: 0.35em;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.preloader__bar {
+  width: min(60vw, 320px);
+  height: 2px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+.preloader__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--hud), var(--signal));
+  box-shadow: 0 0 12px var(--glow-blue);
+  transition: width 0.2s ease-out;
+}
+.preloader__pct {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--ink-dim);
+}
+
 @media (max-width: 900px) {
   .term {
     width: auto;
