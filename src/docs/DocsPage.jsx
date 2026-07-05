@@ -114,7 +114,7 @@ const markdownComponents = {
 };
 
 export default function DocsPage({ doc }) {
-  const isOverview = doc.slug === "overview";
+  const showDeepDives = doc.slug === "upcoming-features" || doc.slug === "overview";
 
   return (
     <article className="docs-page">
@@ -130,14 +130,18 @@ export default function DocsPage({ doc }) {
         </ReactMarkdown>
       </div>
 
-      {isOverview && (
+      {showDeepDives && (
         <section className="docs-deepdive">
           <h2>Deep dives</h2>
           <div className="docs-cards">
             {docs
-              .filter((d) => d.slug !== "overview")
+              .filter((d) => d.slug !== doc.slug)
               .map((d) => (
-                <Link key={d.slug} to={`/docs/${d.slug}`} className="docs-card">
+                <Link
+                  key={d.slug}
+                  to={d.slug === "upcoming-features" ? "/docs" : `/docs/${d.slug}`}
+                  className="docs-card"
+                >
                   <span className="docs-card__title">{d.title}</span>
                   <span className="docs-card__tagline">{d.tagline}</span>
                   <span className="docs-card__arrow" aria-hidden="true">→</span>

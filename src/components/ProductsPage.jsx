@@ -51,7 +51,7 @@ const CLOUD_CAPABILITIES_LIST = [
 // ──────────────────────────────────────────────────────────────
 // MODULE-SCOPED COMPONENT HELPERS (Vercel Best Practice: rerender-no-inline-components)
 // ──────────────────────────────────────────────────────────────
-const OsCard = memo(function OsCard({ item }) {
+const OsCard = memo(function OsCard({ item, onShowNotification }) {
   return (
     <div className="simple-card">
       <h3 className="simple-card__title">{item.name}</h3>
@@ -62,7 +62,7 @@ const OsCard = memo(function OsCard({ item }) {
           className="simple-btn simple-btn--primary"
           onClick={(e) => {
             e.preventDefault();
-            alert(`Starting download: ${item.name} (${item.primaryLabel})...`);
+            onShowNotification(`${item.name} (${item.primaryLabel})`);
           }}
         >
           {item.primaryLabel}
@@ -72,7 +72,7 @@ const OsCard = memo(function OsCard({ item }) {
           className="simple-link"
           onClick={(e) => {
             e.preventDefault();
-            alert(`Starting download: ${item.name} (${item.secondaryLabel})...`);
+            onShowNotification(`${item.name} (${item.secondaryLabel})`);
           }}
         >
           {item.secondaryLabel}
@@ -104,8 +104,13 @@ const CliRow = memo(function CliRow({ item, copiedId, onCopy }) {
 export default function ProductsPage() {
   const [activeTab, setActiveTab] = useState("local");
   const [copiedId, setCopiedId] = useState(null);
+  const [devNotification, setDevNotification] = useState(null);
   const timerRef = useRef(null);
   const reduce = useReducedMotion();
+
+  const handleShowNotification = useCallback((targetLabel) => {
+    setDevNotification({ target: targetLabel });
+  }, []);
 
   // Clean up timer on unmount (Vercel Best Practice: rerender-functional-setstate / memory safety)
   useEffect(() => {
@@ -180,7 +185,7 @@ export default function ProductsPage() {
 
             <div className="tech-grid-3">
               {DESKTOP_OS_LIST.map((os) => (
-                <OsCard key={os.id} item={os} />
+                <OsCard key={os.id} item={os} onShowNotification={handleShowNotification} />
               ))}
             </div>
 
@@ -219,7 +224,7 @@ export default function ProductsPage() {
                     className="simple-btn simple-btn--primary"
                     onClick={(e) => {
                       e.preventDefault();
-                      alert("Starting Android Universal (.apk) download...");
+                      handleShowNotification("Android Gateway (.apk)");
                     }}
                   >
                     Download APK
@@ -229,7 +234,7 @@ export default function ProductsPage() {
                     className="simple-link"
                     onClick={(e) => {
                       e.preventDefault();
-                      alert("Opening Google Play Store page...");
+                      handleShowNotification("Google Play Store");
                     }}
                   >
                     Get it on Google Play →
@@ -254,10 +259,8 @@ export default function ProductsPage() {
                   rel="noopener noreferrer"
                   className="simple-btn simple-btn--primary simple-btn--glow"
                   onClick={(e) => {
-                    if (window.location.port !== "5173") {
-                      e.preventDefault();
-                      alert("Opening Cloud GCS Web Dashboard (http://localhost:5173)...");
-                    }
+                    e.preventDefault();
+                    handleShowNotification("Cloud GCS Web Dashboard");
                   }}
                 >
                   Launch Cloud GCS Console →
@@ -290,6 +293,63 @@ export default function ProductsPage() {
           </section>
         )}
       </main>
+
+      {devNotification && (
+        <div className="dev-notif-modal-backdrop" onClick={() => setDevNotification(null)}>
+          <div
+            className="dev-notif-modal animate-fade-in"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-labelledby="dev-notif-title"
+            aria-modal="true"
+          >
+            <div className="dev-notif-modal__header">
+              <div className="dev-notif-modal__icon">🛡️</div>
+              <div>
+                <span className="dev-notif-modal__eyebrow">Regulatory & Compliance Notice</span>
+                <h3 id="dev-notif-title" className="dev-notif-modal__title">
+                  Distribution Approval Pending
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="dev-notif-modal__close"
+                onClick={() => setDevNotification(null)}
+                aria-label="Close notification"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {devNotification.target && (
+              <div className="dev-notif-modal__badge">
+                <span>Requested Target:</span> <strong>{devNotification.target}</strong>
+              </div>
+            )}
+
+            <p className="dev-notif-modal__body">
+              We are currently undergoing regulatory compliance reviews and acquiring distribution authorizations across respective international jurisdictions. While public downloads and live deployment binaries are temporarily restricted during this approval phase, our full system architecture, SITL simulation specs, and gateway documentation are freely available to review.
+            </p>
+
+            <div className="dev-notif-modal__actions">
+              <a
+                href="#/docs"
+                className="simple-btn simple-btn--primary simple-btn--glow"
+                onClick={() => setDevNotification(null)}
+              >
+                Explore Documentation →
+              </a>
+              <button
+                type="button"
+                className="simple-btn simple-btn--secondary"
+                onClick={() => setDevNotification(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

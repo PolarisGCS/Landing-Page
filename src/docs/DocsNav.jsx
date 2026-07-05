@@ -9,8 +9,8 @@ export default function DocsNav() {
         {docs.map((d, i) => (
           <NavLink
             key={d.slug}
-            to={d.slug === "overview" ? "/docs" : `/docs/${d.slug}`}
-            end={d.slug === "overview"}
+            to={d.slug === "upcoming-features" ? "/docs" : `/docs/${d.slug}`}
+            end={d.slug === "upcoming-features"}
             className={({ isActive }) =>
               "docs-nav__link" +
               (d.pinned ? " docs-nav__link--pinned" : "") +
@@ -22,6 +22,16 @@ export default function DocsNav() {
           </NavLink>
         ))}
       </nav>
+
+      <div className="docs-sidebar__note">
+        <div className="docs-sidebar__note-header">
+          <span className="docs-sidebar__note-icon" aria-hidden="true">🚧</span>
+          <span>Active Build & Preview</span>
+        </div>
+        <p className="docs-sidebar__note-body">
+          Welcome to PolarisGCS! Our interactive landing website and cloud console are currently in active development and internal testing. We have routed our domain directly to this comprehensive documentation suite so you can review our architecture, gateway specs, and flight capabilities while we finalize regional approvals. Feel free to explore the website—thank you!
+        </p>
+      </div>
     </aside>
   );
 }

@@ -10,7 +10,7 @@
  * names a CLI visual (resolved in Terminal.jsx).
  */
 
-export const brand = { mark: "PolarisGCS", tag: "GROUND CONTROL" };
+export const brand = { mark: "PolarisGCS", tag: "" };
 
 export const nav = {
   links: [

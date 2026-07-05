@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import CinematicExperience from "./components/CinematicExperience";
 import ProductsPage from "./components/ProductsPage";
 import DocsApp from "./docs/DocsApp";
@@ -18,6 +18,9 @@ function useHash() {
  *  persistent home stage below. */
 function isOverlayHash(hash) {
   return (
+    hash === "" ||
+    hash === "#" ||
+    hash === "#/" ||
     hash === "#products" ||
     hash === "#/products" ||
     hash === "#deploy" ||
@@ -55,6 +58,7 @@ export default function App() {
     <HashRouter>
       <HomeStage />
       <Routes>
+        <Route path="/" element={<Navigate to="/docs" replace />} />
         <Route path="/docs/*" element={<DocsApp />} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/deploy" element={<ProductsPage />} />

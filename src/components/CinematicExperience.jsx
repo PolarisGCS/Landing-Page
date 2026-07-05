@@ -110,7 +110,8 @@ export default function CinematicExperience() {
   useEffect(() => {
     const handleHash = () => {
       const h = window.location.hash;
-      if (h === "#fleet") select(1);
+      if (h === "#home" || h === "#/home") select(0);
+      else if (h === "#fleet") select(1);
       else if (h === "#telemetry") select(2);
       else if (h === "#missions") select(3);
       else if (h === "#docs") select(5);

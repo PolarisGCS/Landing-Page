@@ -7,9 +7,9 @@ export default function DocsApp() {
   return (
     <Routes>
       <Route element={<DocsLayout />}>
-        <Route index element={<DocsPage doc={docsBySlug.overview} />} />
+        <Route index element={<DocsPage doc={docsBySlug["upcoming-features"]} />} />
         {docs
-          .filter((d) => d.slug !== "overview")
+          .filter((d) => d.slug !== "upcoming-features")
           .map((d) => (
             <Route
               key={d.slug}
