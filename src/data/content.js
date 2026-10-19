@@ -43,7 +43,7 @@ export const bands = [
     channel: "gcs.fleet",
     level: "info",
     lines: ["Every drone.", "One console."],
-    comment: "tier-1 wifi + tier-2 rf · up to 27 drones per gateway",
+    comment: "tier-1 wifi + tier-2 rf · rich/critical budget per radio group",
     graphic: "fleet",
   },
   {
@@ -120,7 +120,7 @@ export const pipelines = {
 
 /** Stats — consumed by the metrics BarChart graphic. */
 export const metrics = [
-  { label: "drones / gateway", value: 27, suffix: "", max: 30 },
+  { label: "kbit/s per radio group", value: 37, suffix: "", max: 40 },
   { label: "fleet at scale", value: 1000, suffix: "+", max: 1200 },
   { label: "uptime target", value: 99.9, suffix: "%", max: 100 },
   { label: "history kept", value: 30, suffix: "d", max: 30 },

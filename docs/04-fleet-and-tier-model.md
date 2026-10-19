@@ -1,6 +1,6 @@
 # Fleet & Tier Model
 
-Two radio tiers, one automatic budgeting system, and up to 27 drones per gateway.
+Two radio tiers and one automatic rich/critical budgeting system per radio group.
 
 ## Why Radio Tiers Exist in Drone Swarms
 
@@ -21,7 +21,7 @@ Because RF radios operate over narrow frequency bands, multiple aircraft must sh
 * **Dynamic Live Rebalancing**: Whenever a drone takes off, lands, joins, or leaves a radio group, the edge gateway recomputes the bandwidth equation in real time, rebalancing feed allocations instantly without operator intervention.
 
 ### Tier 2 Capacity Limits
-To prevent radio round-trip latency from exceeding safety thresholds, PolarisGCS caps Tier 2 radio groups at **6 drones per physical radio channel**. A single Desktop Gateway supports up to 4 independent radio groups simultaneously, providing a maximum Tier 2 capacity of **24 drones per gateway**.
+Each Tier 2 radio group is kept inside its bandwidth budget by the rich/critical allocation. As more drones join a group, more of them move to the critical role, and the gateway recomputes the roles every time a drone joins or leaves. Extra radio groups, or extra gateways, add capacity.
 
 ---
 
@@ -40,13 +40,11 @@ Due to WiFi channel contention and wireless spectrum saturation, a single edge g
 
 ---
 
-## Combined Gateway Capacity & Multi-Gateway Fan-In
+## Gateway Capacity & Multi-Gateway Fan-In
 
-By combining Tier 1 and Tier 2 allocations, the mathematical capacity of a single PolarisGCS Desktop Gateway is precisely determined:
+A gateway's capacity is set by its radio groups rather than by a fixed drone count. Each Tier 2 radio group works to a 37 kbit/s budget: every drone costs 3.5 kbit/s in the critical role and 14 kbit/s in the rich role, and the gateway keeps as many drones rich as the budget allows.
 
-$$\text{Total Gateway Capacity} = (4 \times 6\text{ Tier 2 Drones}) + 3\text{ Tier 1 Drones} + 1\text{ Video Drone} = 27\text{ Drones}$$
-
-When operational requirements call for fleets exceeding 27 aircraft, PolarisGCS scales horizontally via **Multi-Gateway Fan-In**. An operator's cloud account can authenticate and bind dozens of independent Desktop and Android gateways simultaneously. The Cloud-GCS web dashboard automatically aggregates telemetry across all edge gateways, rendering hundreds of vehicles within a single, unified satellite canvas.
+For larger fleets, PolarisGCS scales horizontally via **Multi-Gateway Fan-In**. An operator's cloud account can bind several independent Desktop and Android gateways at the same time, and the Cloud-GCS web dashboard shows every drone from every gateway on one map.
 
 ---
 
@@ -73,4 +71,4 @@ To configure and verify fleet tiers during operational deployments:
 2. **Register Vehicles in Gateway**: Open the Desktop Gateway Add Drone panel and register your aircraft. Ensure Tier 1 WiFi vehicles are registered with their high-speed TCP/UDP endpoints, while Tier 2 RF vehicles are bound to their respective shared serial COM ports.
 3. **Monitor Bandwidth Allocation**: Open the **Fleet Tab** on the Cloud-GCS dashboard. Observe the automatic promotion algorithm in action as active drones are highlighted with **Rich** telemetry badges while standby drones display **Critical** badges.
 4. **Test Dynamic Rebalancing**: During a flight session, command one of the "Rich" Tier 2 drones to land and disarm; observe that the gateway instantly promotes a standby "Critical" drone in the same radio group to "Rich" telemetry within milliseconds.
-5. **Scale via Multi-Gateway**: To expand your fleet beyond 27 vehicles, launch a second gateway instance on a separate field laptop, bind it to your cloud account via a pairing code, and verify that all new aircraft seamlessly populate your dashboard map.
+5. **Scale via Multi-Gateway**: To expand your fleet, launch a second gateway instance on a separate field laptop, bind it to your cloud account via a pairing code, and verify that all new aircraft seamlessly populate your dashboard map.

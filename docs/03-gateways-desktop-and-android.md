@@ -37,7 +37,7 @@ The Fleet Panel rendered above utilizes a high-performance `QTableView` to displ
 
 ## Android Gateway (Mobile Field Operations)
 
-The Android Gateway is a native mobile application designed for lightweight tactical deployments, field inspections, and single-operator missions. Unlike the Desktop app which scales to 27 drones, the Android Gateway is intentionally capped to **one connected drone per phone**, optimizing battery consumption and mobile CPU usage.
+The Android Gateway is a native mobile application designed for lightweight tactical deployments, field inspections, and single-operator missions. Unlike the Desktop app, which manages many drones across several radio groups, the Android Gateway is intentionally capped to **one connected drone per phone**, optimizing battery consumption and mobile CPU usage.
 
 ### Shared Python Core
 

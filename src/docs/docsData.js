@@ -45,7 +45,7 @@ const rawDocs = [
   {
     slug: "fleet-tier-model",
     title: "Fleet & Tier Model",
-    tagline: "Two radio tiers, one automatic budgeting system, and up to 27 drones per gateway.",
+    tagline: "Two radio tiers and one automatic rich/critical budgeting system per radio group.",
     file: "04-fleet-and-tier-model.md",
   },
   {

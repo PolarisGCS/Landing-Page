@@ -35,7 +35,7 @@
 | Band channel | Real product feature |
 |---|---|
 | `gcs.session` | General product framing (web/desktop/mobile GCS) |
-| `gcs.fleet` | Tier-1 wifi + tier-2 RF, up to 27 drones/gateway |
+| `gcs.fleet` | Tier-1 wifi + tier-2 RF, rich/critical budgeting per radio group |
 | `gcs.telemetry` | Live telemetry <200ms, Redis fan-out |
 | `gcs.mission` | Waypoints → geofence → upload → AUTO (mission upload/ack flow) |
 | `gcs.sim` | ArduPilot SITL parity with real hardware |
